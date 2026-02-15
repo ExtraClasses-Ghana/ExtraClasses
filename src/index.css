@@ -1,0 +1,242 @@
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource/playfair-display/400.css';
+@import '@fontsource/playfair-display/500.css';
+@import '@fontsource/playfair-display/600.css';
+@import '@fontsource/playfair-display/700.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* EDULINK GHANA Color System */
+    --background: 210 40% 98%;
+    --foreground: 220 26% 14%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 26% 14%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 26% 14%;
+
+    /* Deep Navy Blue - Trust & Knowledge */
+    --primary: 216 59% 23%;
+    --primary-foreground: 210 40% 98%;
+
+    /* Coral - Energy & Action */
+    --secondary: 12 100% 68%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Soft Teal - Success & Growth */
+    --accent: 174 60% 56%;
+    --accent-foreground: 220 26% 14%;
+
+    /* Warm Gold - Premium & Achievement */
+    --gold: 45 84% 61%;
+    --gold-foreground: 220 26% 14%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 216 59% 23%;
+
+    --radius: 0.75rem;
+
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(216, 59%, 23%) 0%, hsl(174, 60%, 40%) 100%);
+    --gradient-coral: linear-gradient(135deg, hsl(12, 100%, 68%) 0%, hsl(45, 84%, 61%) 100%);
+    --gradient-card: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+
+    /* Shadows */
+    --shadow-sm: 0 2px 8px -2px rgba(26, 54, 93, 0.08);
+    --shadow-md: 0 8px 24px -4px rgba(26, 54, 93, 0.12);
+    --shadow-lg: 0 16px 48px -8px rgba(26, 54, 93, 0.16);
+    --shadow-coral: 0 8px 32px -4px rgba(255, 126, 93, 0.4);
+    --shadow-gold: 0 8px 32px -4px rgba(236, 201, 75, 0.4);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 216 59% 23%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 220 26% 14%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 216 59% 23%;
+  }
+
+  .dark {
+    --background: 220 26% 10%;
+    --foreground: 210 40% 98%;
+
+    --card: 220 26% 14%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 220 26% 14%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 174 60% 56%;
+    --primary-foreground: 220 26% 14%;
+
+    --secondary: 12 100% 68%;
+    --secondary-foreground: 0 0% 100%;
+
+    --accent: 45 84% 61%;
+    --accent-foreground: 220 26% 14%;
+
+    --muted: 220 26% 18%;
+    --muted-foreground: 215 20% 65%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 220 26% 22%;
+    --input: 220 26% 22%;
+    --ring: 174 60% 56%;
+
+    --sidebar-background: 220 26% 10%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 174 60% 56%;
+    --sidebar-primary-foreground: 220 26% 14%;
+    --sidebar-accent: 220 26% 18%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 220 26% 22%;
+    --sidebar-ring: 174 60% 56%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-xl border border-white/20 shadow-md;
+  }
+
+  .glass-card-dark {
+    @apply bg-primary/80 backdrop-blur-xl border border-white/10;
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-hero);
+  }
+
+  .gradient-text-coral {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-coral);
+  }
+
+  .btn-coral {
+    @apply bg-secondary text-secondary-foreground rounded-xl px-6 py-3 font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-[0.98];
+    box-shadow: var(--shadow-coral);
+  }
+
+  .btn-coral:hover {
+    box-shadow: 0 12px 40px -4px rgba(255, 126, 93, 0.5);
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground rounded-xl px-6 py-3 font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-[0.98];
+  }
+
+  .btn-outline {
+    @apply bg-transparent border-2 border-secondary text-secondary rounded-xl px-6 py-3 font-semibold transition-all duration-300 hover:bg-secondary hover:text-white;
+  }
+
+  .teacher-card {
+    @apply glass-card rounded-2xl p-6 transition-all duration-300 hover:-translate-y-2 hover:shadow-lg;
+  }
+
+  .subject-badge {
+    @apply px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .floating-element {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .floating-element-delayed {
+    animation: float 6s ease-in-out infinite 2s;
+  }
+}
+
+@layer utilities {
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-20px) rotate(2deg);
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(255, 126, 93, 0.4);
+    }
+    50% {
+      box-shadow: 0 0 40px rgba(255, 126, 93, 0.6);
+    }
+  }
+
+  @keyframes gradient-shift {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  .animate-shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient-shift 8s ease infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  .bg-pattern-dots {
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+}
