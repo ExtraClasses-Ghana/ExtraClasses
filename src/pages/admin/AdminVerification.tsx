@@ -35,6 +35,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface VerificationDocument {
   id: string;
@@ -64,9 +71,16 @@ export default function AdminVerification() {
   const [selectedTeacher, setSelectedTeacher] = useState<PendingTeacher | null>(null);
   const [reviewNotes, setReviewNotes] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PendingTeacher | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+
+  const VERIFICATION_STATUS_OPTIONS = [
+    { value: "pending", label: "Pending" },
+    { value: "in_review", label: "Processing" },
+    { value: "verified", label: "Approved" },
+  ] as const;
 
   useEffect(() => {
     fetchPendingVerifications();
@@ -90,30 +104,27 @@ export default function AdminVerification() {
 
   const fetchPendingVerifications = async () => {
     try {
-      // Fetch teachers with pending verification
+      // Fetch teachers with pending or in_review verification (so dropdown can show Pending / Processing / Approved)
       const { data: teachers, error: teachersError } = await supabase
         .from("teacher_profiles")
         .select("user_id, verification_status, created_at")
-        .eq("verification_status", "pending");
+        .in("verification_status", ["pending", "in_review"]);
 
       if (teachersError) throw teachersError;
 
-      // For each teacher, fetch their profile and documents
+      // For each teacher, fetch their profile and documents (all docs for display)
       const teachersWithData = await Promise.all(
         (teachers || []).map(async (teacher) => {
-          // Fetch profile
           const { data: profile } = await supabase
             .from("profiles")
             .select("full_name, email, avatar_url")
             .eq("user_id", teacher.user_id)
             .maybeSingle();
 
-          // Fetch documents
           const { data: documents } = await supabase
             .from("verification_documents")
             .select("*")
-            .eq("teacher_id", teacher.user_id)
-            .eq("status", "pending");
+            .eq("teacher_id", teacher.user_id);
 
           return {
             ...teacher,
@@ -128,6 +139,66 @@ export default function AdminVerification() {
       console.error("Error fetching pending verifications:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleStatusChange = async (teacher: PendingTeacher, newStatus: string) => {
+    setStatusUpdatingId(teacher.user_id);
+    try {
+      const payload: { verification_status: string; is_verified?: boolean; onboarding_completed?: boolean } = {
+        verification_status: newStatus,
+      };
+      if (newStatus === "verified") {
+        payload.is_verified = true;
+        payload.onboarding_completed = true;
+      }
+
+      const { error: profileError } = await supabase
+        .from("teacher_profiles")
+        .update(payload)
+        .eq("user_id", teacher.user_id);
+
+      if (profileError) throw profileError;
+
+      if (newStatus === "verified") {
+        await supabase
+          .from("profiles")
+          .update({
+            status: "active",
+            status_updated_at: new Date().toISOString(),
+            status_updated_by: user?.id || null,
+          })
+          .eq("user_id", teacher.user_id);
+
+        await supabase
+          .from("verification_documents")
+          .update({
+            status: "approved",
+            reviewed_at: new Date().toISOString(),
+          })
+          .eq("teacher_id", teacher.user_id);
+      }
+
+      toast({
+        title: "Status updated",
+        description: `${teacher.profile?.full_name} is now ${VERIFICATION_STATUS_OPTIONS.find((o) => o.value === newStatus)?.label ?? newStatus}.`,
+      });
+      if (newStatus === "verified") {
+        setPendingTeachers((prev) => prev.filter((t) => t.user_id !== teacher.user_id));
+        setSelectedTeacher((s) => (s?.user_id === teacher.user_id ? null : s));
+        setDeleteTarget((d) => (d?.user_id === teacher.user_id ? null : d));
+      } else {
+        fetchPendingVerifications();
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update status",
+        variant: "destructive",
+      });
+      fetchPendingVerifications();
+    } finally {
+      setStatusUpdatingId(null);
     }
   };
 
@@ -177,7 +248,7 @@ export default function AdminVerification() {
 
       setSelectedTeacher(null);
       setReviewNotes("");
-      fetchPendingVerifications();
+      setPendingTeachers((prev) => prev.filter((t) => t.user_id !== teacher.user_id));
     } catch (error: any) {
       toast({
         title: "Error",
@@ -228,7 +299,7 @@ export default function AdminVerification() {
 
       setSelectedTeacher(null);
       setReviewNotes("");
-      fetchPendingVerifications();
+      setPendingTeachers((prev) => prev.filter((t) => t.user_id !== teacher.user_id));
     } catch (error: any) {
       toast({
         title: "Error",
@@ -269,7 +340,7 @@ export default function AdminVerification() {
       setDeleteTarget(null);
       setSelectedTeacher(null);
       setReviewNotes("");
-      fetchPendingVerifications();
+      setPendingTeachers((prev) => prev.filter((t) => t.user_id !== teacher.user_id));
     } catch (error: any) {
       toast({
         title: "Error",
@@ -333,7 +404,7 @@ export default function AdminVerification() {
         description: `${teacher.profile?.full_name} is now verified and visible in listings.`,
       });
 
-      fetchPendingVerifications();
+      setPendingTeachers((prev) => prev.filter((t) => t.user_id !== teacher.user_id));
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -401,10 +472,25 @@ export default function AdminVerification() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500">
-                      <Clock className="w-3 h-3 mr-1" />
-                      Pending Review
-                    </Badge>
+                    <Select
+                      value={teacher.verification_status || "pending"}
+                      onValueChange={(value) => handleStatusChange(teacher, value)}
+                      disabled={statusUpdatingId === teacher.user_id}
+                    >
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {VERIFICATION_STATUS_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {statusUpdatingId === teacher.user_id && (
+                      <span className="text-xs text-muted-foreground">Updating…</span>
+                    )}
                   </div>
                 </div>
 

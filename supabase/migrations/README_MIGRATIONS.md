@@ -4,7 +4,9 @@
 
 | File | Purpose |
 |------|--------|
-| **20260125000000_extraclass_initial.sql** | Full schema: `profiles`, `teacher_profiles`, `user_roles`, `sessions`, `payments`, `messages`, `reviews`, `verification_documents`, `admin_notifications`, `system_settings`, `subjects`, `course_materials`, `complaints`, `video_sessions`, `video_signaling`, `contact_messages`, `user_blocks`, `user_presence`, `typing_indicators`, `teacher_withdrawals`, `audit_logs`, plus RLS, triggers, storage buckets, and seed data. |
+| **20260125000000_extraclass_initial.sql** | Full schema including realtime for `teacher_profiles` and `verification_documents` so teacher dashboard, settings, and admin verification get live updates. |
+| **20260126000001_extraclass_realtime_teacher_verification.sql** | Optional: run if your DB was created before realtime was added for teacher verification. Adds `teacher_profiles` and `verification_documents` to realtime and index on `verification_status`. |
+| **20260127000000_extraclass_verification_status_only.sql** | Verification status only: ensures `teacher_profiles.verification_status` exists with values `pending`, `in_review`, `verified`, `rejected`; index; realtime for verification page and teacher dashboard/settings. |
 
 **How to run on a new project**
 

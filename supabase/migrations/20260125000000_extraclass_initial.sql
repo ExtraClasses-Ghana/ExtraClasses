@@ -551,10 +551,12 @@ CREATE POLICY "Prevent direct inserts to audit_logs" ON public.audit_logs FOR IN
 CREATE POLICY "Prevent all updates to audit_logs" ON public.audit_logs FOR UPDATE USING (false);
 CREATE POLICY "Prevent all deletes from audit_logs" ON public.audit_logs FOR DELETE USING (false);
 
--- 11) Realtime
+-- 11) Realtime (teachers/dashboard/settings subscribe to teacher_profiles and verification_documents for verification_status)
 ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.reviews;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.teacher_profiles;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.verification_documents;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.video_sessions;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.video_signaling;
 
