@@ -48,6 +48,9 @@ export function Navbar() {
   
   const isHomePage = location.pathname === "/";
   const isHeroVisible = isHomePage && !scrolled;
+  // On Find Teachers and other non-home pages: always white fixed navbar (no scroll change)
+  const isTeachersPage = location.pathname === "/teachers";
+  const useSolidWhiteNav = isTeachersPage || !isHomePage;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -60,6 +63,8 @@ export function Navbar() {
 
   useEffect(() => {
     if (location.state?.openAuth) {
+      const tab = (location.state as { defaultTab?: "login" | "signup" })?.defaultTab;
+      if (tab) setAuthModalTab(tab);
       setAuthModalOpen(true);
       window.history.replaceState({}, document.title);
     }
@@ -94,9 +99,7 @@ export function Navbar() {
         animate={{ y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled
-            ? "bg-white/90 backdrop-blur-xl shadow-soft"
-            : "bg-transparent"
+          useSolidWhiteNav ? "bg-white shadow-sm" : scrolled ? "bg-white/90 backdrop-blur-xl shadow-soft" : "bg-transparent"
         }`}
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -240,7 +243,7 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu - scrollable when content overflows */}
         <AnimatePresence>
           {isOpen && (
             <motion.div
@@ -248,7 +251,7 @@ export function Navbar() {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
-              className="lg:hidden bg-white border-t"
+              className="lg:hidden bg-white border-t max-h-[70vh] overflow-y-auto overflow-x-hidden"
             >
               <div className="container mx-auto px-4 py-4 space-y-4">
                 {navLinks.map((link, index) => (

@@ -122,7 +122,7 @@ export function TeacherHeader({ teacher, onBookSession, onMessage }: TeacherHead
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="flex flex-col lg:flex-row gap-8 items-start"
           >
             {/* Profile Image */}

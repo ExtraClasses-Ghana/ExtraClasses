@@ -12,6 +12,8 @@ interface Profile {
   phone: string | null;
   avatar_url: string | null;
   region: string | null;
+  education_level?: string | null;
+  education_sub_category?: string | null;
   // Account status fields (added so components can react to admin updates)
   status?: string | null;
   status_reason?: string | null;
@@ -24,7 +26,7 @@ interface AuthContextType {
   profile: Profile | null;
   role: AppRole | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string, role: AppRole) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string, role: AppRole, educationLevel?: string, educationSubCategory?: string | null) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
@@ -94,6 +96,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             avatar_url: updated.avatar_url,
             phone: updated.phone,
             region: updated.region,
+            education_level: updated.education_level ?? prev.education_level,
+            education_sub_category: updated.education_sub_category ?? prev.education_sub_category,
             status: updated.status ?? prev.status,
             status_reason: updated.status_reason ?? prev.status_reason,
             status_updated_at: updated.status_updated_at ?? prev.status_updated_at,
@@ -137,9 +141,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string, role: AppRole) => {
+  const signUp = async (email: string, password: string, fullName: string, role: AppRole, educationLevel?: string, educationSubCategory?: string | null) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -147,11 +151,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           data: {
             full_name: fullName,
             role: role,
+            education_level: educationLevel || null,
+            education_sub_category: educationSubCategory || null,
           },
         },
       });
 
       if (error) throw error;
+
+      // Update profile with education category (trigger creates profile; update once it exists)
+      if (data.user && educationLevel) {
+        await supabase
+          .from("profiles")
+          .update({
+            education_level: educationLevel,
+            education_sub_category: educationSubCategory || null,
+          })
+          .eq("user_id", data.user.id);
+      }
+
       return { error: null };
     } catch (error) {
       return { error: error as Error };

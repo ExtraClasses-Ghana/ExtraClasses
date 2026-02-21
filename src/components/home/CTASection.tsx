@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -10,6 +11,8 @@ const benefits = [
 ];
 
 export function CTASection() {
+  const navigate = useNavigate();
+
   return (
     <section className="py-24 relative overflow-hidden">
       {/* Gradient Background */}
@@ -36,10 +39,10 @@ export function CTASection() {
         <div className="max-w-4xl mx-auto text-center">
           {/* Badge */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 mb-8"
           >
             <Sparkles className="w-4 h-4 text-white" />
@@ -50,10 +53,10 @@ export function CTASection() {
 
           {/* Heading */}
           <motion.h2
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.1 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.6, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-white mb-6"
           >
             Ready to Transform Your <br />
@@ -62,10 +65,10 @@ export function CTASection() {
 
           {/* Description */}
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.6, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="text-lg text-white/90 mb-8 max-w-2xl mx-auto"
           >
             Join thousands of students across Ghana who are achieving their 
@@ -102,14 +105,18 @@ export function CTASection() {
             <Button
               size="lg"
               className="bg-white text-secondary hover:bg-white/90 rounded-xl px-8 py-6 text-lg font-semibold shadow-large transition-all hover:scale-105"
+              asChild
             >
-              Find a Teacher
-              <ArrowRight className="w-5 h-5 ml-2" />
+              <Link to="/teachers">
+                Find a Teacher
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Link>
             </Button>
             <Button
               size="lg"
               variant="outline"
               className="border-2 border-white text-white hover:bg-white hover:text-secondary rounded-xl px-8 py-6 text-lg font-semibold transition-all"
+              onClick={() => navigate("/", { state: { openAuth: true, defaultTab: "signup" } })}
             >
               Become a Teacher
             </Button>

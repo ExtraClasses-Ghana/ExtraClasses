@@ -54,6 +54,45 @@ export function EarningsAnalytics() {
     }
   }, [user]);
 
+  // Realtime subscription for sessions and withdrawals
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`teacher_earnings_${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "sessions",
+          filter: `teacher_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log("Realtime session update for earnings:", payload);
+          fetchEarnings();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "teacher_withdrawals",
+          filter: `teacher_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log("Realtime withdrawal update for earnings:", payload);
+          fetchEarnings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   const fetchEarnings = async () => {
     try {
       // Get teacher profile stats

@@ -29,6 +29,7 @@ import TeacherAvailability from "./pages/dashboard/TeacherAvailability";
 import TeacherMessages from "./pages/dashboard/TeacherMessages";
 import TeacherSettings from "./pages/dashboard/TeacherSettings";
 import TeacherCredentials from "./pages/dashboard/TeacherCredentials";
+import TeacherWithdrawals from "./pages/dashboard/TeacherWithdrawals";
 
 // Admin Dashboard Pages
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -44,12 +45,14 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminRequests from "./pages/admin/AdminRequests";
+import AdminTWR from "./pages/admin/AdminTWR";
 
 // UI Components (after pages to avoid circular deps)
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { PageTransition } from "@/components/ui/PageTransition";
 
 // Query Client
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -64,13 +67,13 @@ const App = () => (
         <Sonner />
         <Routes>
             {/* Public Routes */}
-            <Route path="/" element={<Index />} />
-            <Route path="/teacher/:id" element={<TeacherProfile />} />
-            <Route path="/teachers" element={<TeacherSearch />} />
-            <Route path="/about" element={<AboutUs />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/subjects" element={<Subjects />} />
-            <Route path="/course-materials" element={<CourseMaterials />} />
+            <Route path="/" element={<PageTransition><Index /></PageTransition>} />
+            <Route path="/teacher/:id" element={<PageTransition><TeacherProfile /></PageTransition>} />
+            <Route path="/teachers" element={<PageTransition><TeacherSearch /></PageTransition>} />
+            <Route path="/about" element={<PageTransition><AboutUs /></PageTransition>} />
+            <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
+            <Route path="/subjects" element={<PageTransition><Subjects /></PageTransition>} />
+            <Route path="/course-materials" element={<PageTransition><CourseMaterials /></PageTransition>} />
             <Route path="/video/:roomCode" element={<VideoCall />} />
 
             {/* Admin Login (Public) */}
@@ -191,6 +194,14 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/dashboard/teacher/withdrawals"
+              element={
+                <ProtectedRoute allowedRoles={["teacher"]}>
+                  <TeacherWithdrawals />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Admin Dashboard Routes */}
             <Route
@@ -286,6 +297,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["admin"]}>
                   <AdminRequests />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/twr"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AdminTWR />
                 </ProtectedRoute>
               }
             />

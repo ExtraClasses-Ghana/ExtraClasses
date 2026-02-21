@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { EDUCATION_CATEGORIES } from "@/hooks/useEducationLevel";
 import logo from "@/assets/extraclasses-logo.webp";
 
 interface AuthModalProps {
@@ -40,6 +41,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
   const [phone, setPhone] = useState("");
   const [region, setRegion] = useState("");
   const [selectedRole, setSelectedRole] = useState<AppRole>("student");
+  const [educationCategory, setEducationCategory] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
@@ -65,9 +67,19 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
         if (!region) {
           throw new Error("Please select your region");
         }
+        if (!educationCategory) {
+          throw new Error("Please select your education category");
+        }
 
         const displayName = title ? `${title} ${fullName}` : fullName;
-        const { error } = await signUp(email, password, displayName, selectedRole);
+        const { error } = await signUp(
+          email,
+          password,
+          displayName,
+          selectedRole,
+          educationCategory,
+          null
+        );
         if (error) throw error;
         toast({
           title: "Account created!",
@@ -94,6 +106,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
     setPhone("");
     setRegion("");
     setSelectedRole("student");
+    setEducationCategory("");
   };
 
   const switchTab = (newTab: "login" | "signup") => {
@@ -123,6 +136,8 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
           <div className="bg-gradient-to-r from-primary to-accent p-6 text-white relative">
             <button
               onClick={onClose}
+              title="Close dialog"
+              aria-label="Close dialog"
               className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-colors"
             >
               <X className="w-5 h-5" />
@@ -244,6 +259,23 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                {/* Education Category */}
+                <div className="space-y-2">
+                  <Label htmlFor="educationCategory">Education Category *</Label>
+                  <Select value={educationCategory} onValueChange={setEducationCategory}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your education category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EDUCATION_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Role Selection */}

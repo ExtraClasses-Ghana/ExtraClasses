@@ -18,7 +18,8 @@ import {
   Ban,
   AlertTriangle,
   RotateCcw,
-  Trash2
+  Trash2,
+  RefreshCw
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
@@ -71,6 +72,29 @@ export default function AdminTeachers() {
 
   useEffect(() => {
     fetchTeachers();
+
+    // Realtime: teacher profiles and profile updates
+    const teacherChannel = supabase
+      .channel("admin_teachers_realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "teacher_profiles" },
+        () => {
+          fetchTeachers();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles" },
+        () => {
+          fetchTeachers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(teacherChannel);
+    };
   }, []);
 
   const fetchTeachers = async () => {
@@ -277,14 +301,27 @@ export default function AdminTeachers() {
       </div>
       {/* Search */}
       <div className="mb-6">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search teachers..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="relative max-w-md flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search teachers..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setLoading(true);
+              fetchTeachers();
+            }}
+            disabled={loading}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+            {loading ? "Refreshing..." : "Refresh"}
+          </Button>
         </div>
       </div>
 

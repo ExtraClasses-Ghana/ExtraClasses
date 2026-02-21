@@ -35,6 +35,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { ImageCropModal } from "@/components/shared/ImageCropModal";
+import { useSubjects } from "@/hooks/useSubjects";
+import { useTeacherAccountStatus } from "@/hooks/useTeacherAccountStatus";
+import { AccountStatusWidget } from "@/components/teacher/AccountStatusWidget";
 
 const regions = [
   "Greater Accra", "Ashanti", "Western", "Central", "Eastern",
@@ -42,11 +45,7 @@ const regions = [
   "Bono East", "Ahafo", "Western North", "Oti", "Savannah", "North East"
 ];
 
-const allSubjects = [
-  "Mathematics", "English", "Science", "Social Studies", "French",
-  "ICT", "Physics", "Chemistry", "Biology", "Geography", "History",
-  "Economics", "Accounting", "Literature", "Music", "Art"
-];
+// Removed hardcoded allSubjects - now fetched from database via useSubjects hook
 
 const qualificationOptions = [
   "Bachelor's Degree", "Master's Degree", "PhD", "Teaching Certificate",
@@ -59,6 +58,13 @@ export default function TeacherSettings() {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Fetch subjects from database
+  const { subjects, loading: subjectsLoading } = useSubjects();
+  
+  // Fetch teacher account status
+  const { accountStatus } = useTeacherAccountStatus(user?.id);
+  
   const [loading, setLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -111,6 +117,37 @@ export default function TeacherSettings() {
     fetchTeacherProfile();
     fetchVerificationStatus();
   }, [profile, user]);
+
+  // Realtime: when admin approves/rejects, verification status updates live
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel(`teacher-settings-verification-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "teacher_profiles",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => fetchVerificationStatus()
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "verification_documents",
+          filter: `teacher_id=eq.${user.id}`,
+        },
+        () => fetchVerificationStatus()
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [user?.id]);
 
   const fetchTeacherProfile = async () => {
     if (!user) return;
@@ -362,6 +399,11 @@ export default function TeacherSettings() {
           </p>
         </div>
 
+        {/* Account Status Widget */}
+        {accountStatus && (
+          <AccountStatusWidget status={accountStatus} />
+        )}
+
         {/* Verification Status Alert */}
         {verificationStatus && verificationStatus.status !== "verified" && (
           <Card className={verificationStatus.status === "rejected" ? "border-destructive/50" : "border-yellow-500/50"}>
@@ -558,18 +600,28 @@ export default function TeacherSettings() {
 
             <div className="space-y-2">
               <Label>Subjects You Teach</Label>
-              <div className="flex flex-wrap gap-2">
-                {allSubjects.map((subject) => (
-                  <Badge
-                    key={subject}
-                    variant={formData.subjects.includes(subject) ? "default" : "outline"}
-                    className="cursor-pointer"
-                    onClick={() => toggleSubject(subject)}
-                  >
-                    {subject}
-                  </Badge>
-                ))}
-              </div>
+              {subjectsLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  <span className="text-sm text-muted-foreground">Loading subjects...</span>
+                </div>
+              ) : subjects.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {subjects.map((subject) => (
+                    <Badge
+                      key={subject.id}
+                      variant={formData.subjects.includes(subject.name) ? "default" : "outline"}
+                      className="cursor-pointer"
+                      onClick={() => toggleSubject(subject.name)}
+                      title={subject.description || subject.name}
+                    >
+                      {subject.name}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No subjects available. Please contact support.</p>
+              )}
             </div>
 
             <div className="space-y-2">

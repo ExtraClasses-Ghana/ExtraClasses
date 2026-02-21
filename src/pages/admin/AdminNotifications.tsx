@@ -24,6 +24,23 @@ export default function AdminNotifications() {
 
   useEffect(() => {
     fetchNotifications();
+
+    // Realtime subscription for admin notifications
+    const channel = supabase
+      .channel("admin_notifications_realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "admin_notifications" },
+        (payload) => {
+          console.log("Realtime admin notification:", payload);
+          fetchNotifications();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchNotifications = async () => {

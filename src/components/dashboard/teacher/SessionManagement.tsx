@@ -58,6 +58,32 @@ export function SessionManagement() {
     }
   }, [user, activeTab]);
 
+  // Realtime subscription for sessions
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`teacher_sessions_${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "sessions",
+          filter: `teacher_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log("Realtime session update for teacher:", payload);
+          fetchSessions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   const fetchSessions = async () => {
     try {
       let query = supabase

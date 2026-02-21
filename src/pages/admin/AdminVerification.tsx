@@ -14,7 +14,8 @@ import {
   FileText,
   User,
   Clock,
-  Download
+  Download,
+  Trash2
 } from "lucide-react";
 import {
   Dialog,
@@ -24,6 +25,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface VerificationDocument {
   id: string;
@@ -53,11 +64,28 @@ export default function AdminVerification() {
   const [selectedTeacher, setSelectedTeacher] = useState<PendingTeacher | null>(null);
   const [reviewNotes, setReviewNotes] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<PendingTeacher | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
   useEffect(() => {
     fetchPendingVerifications();
+
+    const channel = supabase
+      .channel("admin-verification-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "teacher_profiles" },
+        () => fetchPendingVerifications()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "verification_documents" },
+        () => fetchPendingVerifications()
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
   }, []);
 
   const fetchPendingVerifications = async () => {
@@ -205,6 +233,47 @@ export default function AdminVerification() {
       toast({
         title: "Error",
         description: error.message || "Failed to reject teacher",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleDelete = async (teacher: PendingTeacher) => {
+    setProcessing(true);
+    try {
+      const { error: profileError } = await supabase
+        .from("teacher_profiles")
+        .update({ verification_status: "rejected" })
+        .eq("user_id", teacher.user_id);
+
+      if (profileError) throw profileError;
+
+      const { error: docsError } = await supabase
+        .from("verification_documents")
+        .update({
+          status: "rejected",
+          admin_notes: "Deleted by admin.",
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("teacher_id", teacher.user_id);
+
+      if (docsError) throw docsError;
+
+      toast({
+        title: "Verification deleted",
+        description: `${teacher.profile?.full_name} has been removed from pending verification.`,
+      });
+
+      setDeleteTarget(null);
+      setSelectedTeacher(null);
+      setReviewNotes("");
+      fetchPendingVerifications();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete verification",
         variant: "destructive",
       });
     } finally {
@@ -372,14 +441,13 @@ export default function AdminVerification() {
                 </div>
 
                 {/* Actions */}
-                <div className="mt-6 flex justify-end gap-3">
+                <div className="mt-6 flex flex-wrap justify-end gap-2 sm:gap-3">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleQuickVerify(teacher)}
                     disabled={processing}
                     title="Quick verify"
-                    className="mr-2"
                   >
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Verify
@@ -387,10 +455,22 @@ export default function AdminVerification() {
 
                   <Button
                     variant="outline"
+                    size="sm"
                     onClick={() => setSelectedTeacher(teacher)}
                   >
                     <Eye className="w-4 h-4 mr-2" />
                     Review
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    disabled={processing}
+                    onClick={() => setDeleteTarget(teacher)}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
                   </Button>
                 </div>
               </CardContent>
@@ -482,6 +562,28 @@ export default function AdminVerification() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete verification request?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will reject and remove {deleteTarget?.profile?.full_name || "this teacher"}&apos;s verification from the queue. They will see a &quot;rejected&quot; status and can re-submit documents later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={processing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={processing}
+              onClick={() => deleteTarget && handleDelete(deleteTarget)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminDashboardLayout>
   );
 }

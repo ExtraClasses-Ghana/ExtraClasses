@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
+import { useTeacherAccountStatus } from "@/hooks/useTeacherAccountStatus";
+import { AccountStatusWidget } from "@/components/teacher/AccountStatusWidget";
 
 interface Session {
   id: string;
@@ -46,6 +48,7 @@ interface TeacherStats {
 
 export function TeacherOverview() {
   const { user, profile } = useAuth();
+  const { accountStatus } = useTeacherAccountStatus(user?.id);
   const [upcomingSessions, setUpcomingSessions] = useState<(Session & { student?: StudentInfo })[]>([]);
   const [stats, setStats] = useState<TeacherStats>({
     totalEarnings: 0,
@@ -63,7 +66,7 @@ export function TeacherOverview() {
     }
   }, [user]);
 
-  // Subscribe to realtime updates for this teacher's profile and teacher_profile
+  // Subscribe to realtime updates for this teacher's profile, teacher_profile, and sessions
   useEffect(() => {
     if (!user) return;
 
@@ -91,9 +94,22 @@ export function TeacherOverview() {
       )
       .subscribe();
 
+    const sessionsChannel = supabase
+      .channel(`teacher_dashboard_sessions_${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sessions', filter: `teacher_id=eq.${user.id}` },
+        (payload) => {
+          console.log('Realtime sessions update for teacher dashboard:', payload);
+          fetchDashboardData();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(tpChannel);
       supabase.removeChannel(profilesChannel);
+      supabase.removeChannel(sessionsChannel);
     };
   }, [user]);
 
@@ -190,6 +206,11 @@ export function TeacherOverview() {
           </Badge>
         )}
       </div>
+
+      {/* Account Status Widget */}
+      {accountStatus && (
+        <AccountStatusWidget status={accountStatus} />
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

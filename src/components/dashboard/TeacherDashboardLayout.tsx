@@ -30,6 +30,7 @@ const menuItems = [
   { icon: Clock, label: "Availability", path: "/dashboard/teacher/availability" },
   { icon: Users, label: "Students", path: "/dashboard/teacher/students" },
   { icon: CreditCard, label: "Earnings", path: "/dashboard/teacher/earnings" },
+  { icon: CreditCard, label: "Withdrawals", path: "/dashboard/teacher/withdrawals" },
   { icon: MessageSquare, label: "Messages", path: "/dashboard/teacher/messages" },
   { icon: FileCheck, label: "My Credentials", path: "/dashboard/teacher/credentials" },
   { icon: Settings, label: "Settings", path: "/dashboard/teacher/settings" },

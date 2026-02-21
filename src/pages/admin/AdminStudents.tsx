@@ -18,7 +18,8 @@ import {
   TrendingUp,
   Calendar,
   UserPlus,
-  RefreshCw
+  RefreshCw,
+  Mail
 } from "lucide-react";
 import {
   Dialog,
@@ -416,8 +417,8 @@ export default function AdminStudents() {
 
   return (
     <AdminDashboardLayout
-      title="Student Session Report"
-      subtitle="Monitor student registrations and manage student accounts"
+      title="All Students"
+      subtitle="View authenticated students in realtime and manage accounts"
     >
       {/* Registration Analytics */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -605,7 +606,7 @@ export default function AdminStudents() {
       {/* Students Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Registered Students ({filteredStudents.length})</CardTitle>
+          <CardTitle>Authenticated Students ({filteredStudents.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -665,6 +666,18 @@ export default function AdminStudents() {
                       </td>
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          {student.profile?.email && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              asChild
+                              title="Email student"
+                            >
+                              <a href={`mailto:${student.profile.email}`}>
+                                <Mail className="w-4 h-4" />
+                              </a>
+                            </Button>
+                          )}
                           {student.profile?.status === "blocked" || student.profile?.status === "suspended" ? (
                             <Button
                               variant="ghost"

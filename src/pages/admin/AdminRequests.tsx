@@ -6,14 +6,25 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Mail,
   MessageSquare,
   Clock,
   CheckCircle,
   Archive,
   Eye,
-  EyeOff,
-  Loader2
+  Loader2,
+  Trash2,
+  ExternalLink
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -40,6 +51,8 @@ export default function AdminRequests() {
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
   const [updating, setUpdating] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMessages();
@@ -80,6 +93,26 @@ export default function AdminRequests() {
       toast.error('Failed to load messages');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const deleteMessage = async (messageId: string) => {
+    setDeletingId(messageId);
+    try {
+      const { error } = await supabase
+        .from('contact_messages')
+        .delete()
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      toast.success('Message deleted');
+      setSelectedMessage(prev => (prev?.id === messageId ? null : prev));
+      fetchMessages();
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to delete message');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -205,7 +238,14 @@ export default function AdminRequests() {
                           <h3 className="font-semibold">{message.name}</h3>
                           {getStatusBadge(message.status)}
                         </div>
-                        <p className="text-sm text-muted-foreground">{message.email}</p>
+                        <a
+                          href={`mailto:${message.email}`}
+                          className="text-sm text-primary hover:underline flex items-center gap-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {message.email}
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         {getStatusIcon(message.status)}
@@ -242,7 +282,13 @@ export default function AdminRequests() {
                   <div>
                     <Label className="text-sm font-medium">From</Label>
                     <p className="text-sm">{selectedMessage.name}</p>
-                    <p className="text-sm text-muted-foreground">{selectedMessage.email}</p>
+                    <a
+                      href={`mailto:${selectedMessage.email}`}
+                      className="text-sm text-primary hover:underline inline-flex items-center gap-1 mt-0.5"
+                    >
+                      {selectedMessage.email}
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
                   </div>
 
                   <div>
@@ -317,6 +363,21 @@ export default function AdminRequests() {
                         Archive
                       </Button>
                     )}
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => setDeleteConfirmId(selectedMessage.id)}
+                      disabled={updating || deletingId === selectedMessage.id}
+                    >
+                      {deletingId === selectedMessage.id ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4 mr-2" />
+                      )}
+                      Delete
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -334,6 +395,32 @@ export default function AdminRequests() {
           </div>
         </div>
       </div>
+
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete message?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this contact message. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!deletingId}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteConfirmId) {
+                  deleteMessage(deleteConfirmId);
+                  setDeleteConfirmId(null);
+                }
+              }}
+              disabled={!!deletingId}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminDashboardLayout>
   );
 }

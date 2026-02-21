@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { TeacherHeader } from "@/components/teacher/TeacherHeader";
@@ -205,7 +206,12 @@ export default function TeacherProfile() {
       />
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className="container mx-auto px-4 sm:px-6 lg:px-8 py-12"
+      >
         <div className="max-w-4xl mx-auto space-y-8">
           <TeacherAbout teacher={teacher} />
           <ReviewsSection
@@ -214,7 +220,7 @@ export default function TeacherProfile() {
             totalReviews={teacher.reviews}
           />
         </div>
-      </div>
+      </motion.div>
 
       <Footer />
 
@@ -223,11 +229,13 @@ export default function TeacherProfile() {
         isOpen={isBookingOpen}
         onClose={() => setIsBookingOpen(false)}
         teacher={{
+          id: teacher.id,
           name: teacher.name,
           hourlyRate: teacher.hourlyRate,
           image: teacher.image,
           online: teacher.online,
           inPerson: teacher.inPerson,
+          subjects: teacher.subjects || [],
         }}
         selectedDate={selectedDate}
         selectedTime={selectedTime}

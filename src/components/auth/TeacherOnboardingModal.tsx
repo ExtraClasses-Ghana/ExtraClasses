@@ -17,9 +17,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubjectsByEducationLevel } from "@/hooks/useSubjectsByEducationLevel";
 
 interface TeacherOnboardingModalProps {
   isOpen: boolean;
@@ -27,11 +35,7 @@ interface TeacherOnboardingModalProps {
   onComplete: () => void;
 }
 
-const SUBJECTS = [
-  "Mathematics", "English", "Science", "Physics", "Chemistry", 
-  "Biology", "History", "Geography", "Economics", "French",
-  "ICT", "Social Studies", "Literature", "Art", "Music"
-];
+import { EDUCATION_CATEGORIES } from "@/hooks/useEducationLevel";
 
 const LANGUAGES = ["English", "Twi", "Ga", "Ewe", "Hausa", "French"];
 
@@ -42,11 +46,12 @@ const REGIONS = [
 ];
 
 const STEPS = [
-  { id: 1, title: "About You", icon: GraduationCap },
-  { id: 2, title: "Experience", icon: Briefcase },
-  { id: 3, title: "Subjects", icon: BookOpen },
-  { id: 4, title: "Languages & Location", icon: Languages },
-  { id: 5, title: "Achievements & Rates", icon: DollarSign },
+  { id: 1, title: "Education Category", icon: GraduationCap },
+  { id: 2, title: "About You", icon: GraduationCap },
+  { id: 3, title: "Experience", icon: Briefcase },
+  { id: 4, title: "Subjects", icon: BookOpen },
+  { id: 5, title: "Languages & Location", icon: Languages },
+  { id: 6, title: "Achievements & Rates", icon: DollarSign },
 ];
 
 export function TeacherOnboardingModal({ isOpen, onClose, onComplete }: TeacherOnboardingModalProps) {
@@ -56,6 +61,8 @@ export function TeacherOnboardingModal({ isOpen, onClose, onComplete }: TeacherO
   const { toast } = useToast();
 
   // Form state
+  const [educationCategory, setEducationCategory] = useState("");
+  const { subjects } = useSubjectsByEducationLevel(educationCategory || null);
   const [bio, setBio] = useState("");
   const [experienceYears, setExperienceYears] = useState("");
   const [qualifications, setQualifications] = useState<string[]>([]);
@@ -96,7 +103,7 @@ export function TeacherOnboardingModal({ isOpen, onClose, onComplete }: TeacherO
   };
 
   const handleNext = () => {
-    if (currentStep < 5) {
+    if (currentStep < 6) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -125,15 +132,21 @@ export function TeacherOnboardingModal({ isOpen, onClose, onComplete }: TeacherO
           hourly_rate: parseFloat(hourlyRate) || 0,
           onboarding_completed: true,
           achievements,
+          education_level: educationCategory,
+          education_sub_category: null,
         })
         .eq("user_id", user.id);
 
       if (profileError) throw profileError;
 
-      // Update profile region
+      // Update profile region and education category
       const { error: regionError } = await supabase
         .from("profiles")
-        .update({ region: selectedRegion })
+        .update({ 
+          region: selectedRegion,
+          education_level: educationCategory,
+          education_sub_category: null,
+        })
         .eq("user_id", user.id);
 
       if (regionError) throw regionError;
@@ -158,14 +171,16 @@ export function TeacherOnboardingModal({ isOpen, onClose, onComplete }: TeacherO
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return bio.length >= 50;
+        return !!educationCategory;
       case 2:
-        return experienceYears !== "" && qualifications.length > 0;
+        return bio.length >= 50;
       case 3:
-        return selectedSubjects.length > 0;
+        return experienceYears !== "" && qualifications.length > 0;
       case 4:
-        return selectedLanguages.length > 0 && selectedRegion !== "";
+        return selectedSubjects.length > 0;
       case 5:
+        return selectedLanguages.length > 0 && selectedRegion !== "";
+      case 6:
         return hourlyRate !== "" && parseFloat(hourlyRate) > 0;
       default:
         return true;
@@ -229,7 +244,7 @@ export function TeacherOnboardingModal({ isOpen, onClose, onComplete }: TeacherO
               ))}
             </div>
             <p className="text-sm text-muted-foreground mt-3 text-center">
-              Step {currentStep} of 5: {STEPS[currentStep - 1].title}
+              Step {currentStep} of 6: {STEPS[currentStep - 1].title}
             </p>
           </div>
 
@@ -243,8 +258,36 @@ export function TeacherOnboardingModal({ isOpen, onClose, onComplete }: TeacherO
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-4"
               >
-                {/* Step 1: About You */}
+                {/* Step 1: Education Level */}
                 {currentStep === 1 && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Select your education category *</Label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {EDUCATION_CATEGORIES.map((cat) => (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => {
+                              setEducationCategory(cat);
+                              setSelectedSubjects([]);
+                            }}
+                            className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                              educationCategory === cat
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "border-border hover:border-primary/50"
+                            }`}
+                          >
+                            {cat}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 2: About You */}
+                {currentStep === 2 && (
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="bio">Tell students about yourself *</Label>
@@ -263,8 +306,8 @@ export function TeacherOnboardingModal({ isOpen, onClose, onComplete }: TeacherO
                   </div>
                 )}
 
-                {/* Step 2: Experience */}
-                {currentStep === 2 && (
+                {/* Step 3: Experience */}
+                {currentStep === 3 && (
                   <div className="space-y-6">
                     <div className="space-y-2">
                       <Label htmlFor="experience">Years of Teaching Experience *</Label>
@@ -309,23 +352,23 @@ export function TeacherOnboardingModal({ isOpen, onClose, onComplete }: TeacherO
                   </div>
                 )}
 
-                {/* Step 3: Subjects */}
-                {currentStep === 3 && (
+                {/* Step 4: Subjects */}
+                {currentStep === 4 && (
                   <div className="space-y-4">
                     <Label>Select the subjects you teach *</Label>
                     <div className="grid grid-cols-3 gap-2">
-                      {SUBJECTS.map((subject) => (
+                      {subjects.map((subject) => (
                         <button
-                          key={subject}
-                          type="button"
-                          onClick={() => toggleSubject(subject)}
-                          className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                            selectedSubjects.includes(subject)
-                              ? "border-primary bg-primary/10 text-primary"
-                              : "border-border hover:border-primary/50"
-                          }`}
-                        >
-                          {subject}
+                            key={subject.id}
+                            type="button"
+                            onClick={() => toggleSubject(subject.name)}
+                            className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                              selectedSubjects.includes(subject.name)
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "border-border hover:border-primary/50"
+                            }`}
+                          >
+                            {subject.name}
                         </button>
                       ))}
                     </div>
@@ -335,8 +378,8 @@ export function TeacherOnboardingModal({ isOpen, onClose, onComplete }: TeacherO
                   </div>
                 )}
 
-                {/* Step 4: Languages & Location */}
-                {currentStep === 4 && (
+                {/* Step 5: Languages & Location */}
+                {currentStep === 5 && (
                   <div className="space-y-6">
                     <div className="space-y-2">
                       <Label>Languages you can teach in *</Label>
@@ -406,8 +449,8 @@ export function TeacherOnboardingModal({ isOpen, onClose, onComplete }: TeacherO
                   </div>
                 )}
 
-                {/* Step 5: Achievements & Rates */}
-                {currentStep === 5 && (
+                {/* Step 6: Achievements & Rates */}
+                {currentStep === 6 && (
                   <div className="space-y-6">
                     {/* Achievements */}
                     <div className="space-y-2">
@@ -507,7 +550,7 @@ export function TeacherOnboardingModal({ isOpen, onClose, onComplete }: TeacherO
               Back
             </Button>
 
-            {currentStep < 5 ? (
+            {currentStep < 6 ? (
               <Button
                 type="button"
                 onClick={handleNext}

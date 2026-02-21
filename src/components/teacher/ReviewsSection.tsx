@@ -238,6 +238,9 @@ export function ReviewsSection({ teacherId, averageRating, totalReviews }: Revie
 
   const canReview = user && role === "student";
 
+  // Live count: show max of DB total and current list (updates in realtime when new review is added)
+  const displayTotal = Math.max(totalReviews, reviews.length);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -248,7 +251,7 @@ export function ReviewsSection({ teacherId, averageRating, totalReviews }: Revie
     >
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-display font-bold text-foreground">
-          Reviews ({totalReviews + reviews.length})
+          Reviews ({displayTotal})
         </h2>
         {canReview && !showReviewForm && (
           <Button onClick={() => setShowReviewForm(true)} variant="outline">

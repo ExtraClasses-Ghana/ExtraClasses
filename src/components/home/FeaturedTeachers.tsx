@@ -119,13 +119,18 @@ export function FeaturedTeachers() {
         const userIds = teacherProfiles.map(t => t.user_id);
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("user_id, full_name, avatar_url, region")
+          .select("user_id, full_name, avatar_url, region, status")
           .in("user_id", userIds);
 
-        const teachersWithProfiles = teacherProfiles.map(teacher => ({
-          ...teacher,
-          profile: profiles?.find(p => p.user_id === teacher.user_id) || null
-        }));
+        const teachersWithProfiles = teacherProfiles
+          .map(teacher => ({
+            ...teacher,
+            profile: profiles?.find(p => p.user_id === teacher.user_id) || null
+          }))
+          .filter(t => {
+            const p = t.profile as { status?: string } | null;
+            return p && p.status !== "blocked" && p.status !== "suspended";
+          });
 
         setTeachers(teachersWithProfiles);
       }

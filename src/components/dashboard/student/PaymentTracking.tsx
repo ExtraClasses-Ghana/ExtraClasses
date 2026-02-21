@@ -8,8 +8,10 @@ import {
   XCircle,
   Clock,
   ArrowUpRight,
-  ArrowDownLeft
+  ArrowDownLeft,
+  Trash
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,6 +53,32 @@ export function PaymentTracking() {
     if (user) {
       fetchPayments();
     }
+  }, [user]);
+
+  // Realtime subscription for payments
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`student_payment_tracking_${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "payments",
+          filter: `payer_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log("Realtime payment update for student:", payload);
+          fetchPayments();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const fetchPayments = async () => {
@@ -118,6 +146,23 @@ export function PaymentTracking() {
         return "bg-purple-100 text-purple-800";
       default:
         return "bg-muted text-muted-foreground";
+    }
+  };
+
+  const [deletingPayment, setDeletingPayment] = useState<string | null>(null);
+
+  const handleDeletePayment = async (paymentId: string) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase.from("payments").delete().eq("id", paymentId).eq("payer_id", user.id);
+      if (error) throw error;
+      setPayments(prev => prev.filter(p => p.id !== paymentId));
+      toast({ title: "Deleted", description: "Payment record deleted." });
+    } catch (err) {
+      console.error("Error deleting payment:", err);
+      toast({ title: "Error", description: "Could not delete the payment.", variant: "destructive" });
+    } finally {
+      setDeletingPayment(null);
     }
   };
 
@@ -292,9 +337,31 @@ export function PaymentTracking() {
                     <Badge className={getStatusColor(payment.status)}>
                       {payment.status}
                     </Badge>
+                    <div className="flex items-center justify-end gap-2 mt-2">
+                      <Button size="sm" variant="ghost" onClick={() => setDeletingPayment(payment.id)}>
+                        <Trash className="w-4 h-4 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
                   </div>
                 </motion.div>
               ))}
+              <Dialog open={!!deletingPayment} onOpenChange={() => setDeletingPayment(null)}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Delete Record</DialogTitle>
+                    <DialogDescription>
+                      Are you sure you want to delete this record? This action cannot be undone.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <div className="flex gap-2">
+                      <Button variant="ghost" onClick={() => setDeletingPayment(null)}>Cancel</Button>
+                      <Button variant="destructive" onClick={() => deletingPayment && handleDeletePayment(deletingPayment)}>Delete</Button>
+                    </div>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           )}
         </CardContent>

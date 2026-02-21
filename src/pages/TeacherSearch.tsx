@@ -229,9 +229,9 @@ export default function TeacherSearch() {
       <section className="bg-gradient-to-br from-primary via-primary/95 to-accent/20 pt-24 pb-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="text-center max-w-3xl mx-auto"
           >
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-white mb-4">
@@ -242,7 +242,12 @@ export default function TeacherSearch() {
             </p>
 
             {/* Search Bar */}
-            <div className="relative max-w-2xl mx-auto">
+            <motion.div
+              className="relative max-w-2xl mx-auto"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 type="text"
@@ -261,7 +266,7 @@ export default function TeacherSearch() {
                   <X className="w-5 h-5" />
                 </button>
               )}
-            </div>
+            </motion.div>
           </motion.div>
         </div>
       </section>
@@ -269,19 +274,34 @@ export default function TeacherSearch() {
       {/* Main Content */}
       <section className="py-8 lg:py-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row gap-8">
+          <motion.div
+            className="flex flex-col lg:flex-row gap-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
             {/* Sidebar Filters - Desktop */}
-            <div className="lg:w-72 flex-shrink-0">
+            <motion.div
+              className="lg:w-72 flex-shrink-0"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+            >
               <SearchFilters
                 filters={filters}
                 onFilterChange={setFilters}
                 onReset={resetFilters}
                 resultCount={filteredTeachers.length}
               />
-            </div>
+            </motion.div>
 
             {/* Results Area */}
-            <div className="flex-1 min-w-0">
+            <motion.div
+              className="flex-1 min-w-0"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.35 }}
+            >
               {/* Toolbar */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div className="flex items-center gap-2">
@@ -381,12 +401,15 @@ export default function TeacherSearch() {
                   </div>
                 </div>
               ) : filteredTeachers.length > 0 ? (
-                <div
+                <motion.div
                   className={cn(
                     view === "grid"
                       ? "grid sm:grid-cols-2 xl:grid-cols-3 gap-6"
                       : "space-y-4"
                   )}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.4 }}
                 >
                   {filteredTeachers.map((teacher, index) => (
                     <TeacherCard
@@ -396,7 +419,7 @@ export default function TeacherSearch() {
                       index={index}
                     />
                   ))}
-                </div>
+                </motion.div>
               ) : (
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -417,8 +440,8 @@ export default function TeacherSearch() {
                   </Button>
                 </motion.div>
               )}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 

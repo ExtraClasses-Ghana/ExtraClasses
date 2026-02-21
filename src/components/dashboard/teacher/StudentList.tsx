@@ -5,7 +5,8 @@ import {
   Star,
   Calendar,
   MessageSquare,
-  Search
+  Search,
+  Trash2
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +15,20 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ChatWindow } from "@/components/dashboard/ChatWindow";
+import { toast } from "sonner";
+import { RescheduleModal } from "@/components/teacher/RescheduleModal";
 
 interface StudentData {
   student_id: string;
@@ -32,11 +47,41 @@ export function StudentList() {
   const [students, setStudents] = useState<StudentData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedStudentChat, setSelectedStudentChat] = useState<StudentData | null>(null);
+  const [selectedStudentReschedule, setSelectedStudentReschedule] = useState<StudentData | null>(null);
+  const [deleteConfirmStudent, setDeleteConfirmStudent] = useState<StudentData | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchStudents();
     }
+  }, [user]);
+
+  // Realtime subscription for sessions (to update student list when new bookings come in)
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`teacher_student_list_${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "sessions",
+          filter: `teacher_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log("Realtime session update for student list:", payload);
+          fetchStudents();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const fetchStudents = async () => {
@@ -97,6 +142,32 @@ export function StudentList() {
     student.profile?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     student.profile?.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleDeleteStudent = async () => {
+    if (!deleteConfirmStudent) return;
+
+    setIsDeleting(true);
+    try {
+      // Delete all sessions with this student
+      const { error: deleteError } = await supabase
+        .from("sessions")
+        .delete()
+        .eq("teacher_id", user?.id)
+        .eq("student_id", deleteConfirmStudent.student_id);
+
+      if (deleteError) throw deleteError;
+
+      // Remove student from list
+      setStudents(prev => prev.filter(s => s.student_id !== deleteConfirmStudent.student_id));
+      toast.success(`${deleteConfirmStudent.profile?.full_name} has been removed.`);
+    } catch (error) {
+      console.error("Error deleting student:", error);
+      toast.error("Failed to remove student");
+    } finally {
+      setIsDeleting(false);
+      setDeleteConfirmStudent(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -183,13 +254,30 @@ export function StudentList() {
                   </div>
 
                   <div className="flex gap-2 mt-4">
-                    <Button variant="outline" size="sm" className="flex-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => setSelectedStudentChat(student)}
+                    >
                       <MessageSquare className="w-4 h-4 mr-1" />
                       Message
                     </Button>
-                    <Button size="sm" className="flex-1">
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => setSelectedStudentReschedule(student)}
+                    >
                       <Calendar className="w-4 h-4 mr-1" />
-                      Schedule
+                      Reschedule
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => setDeleteConfirmStudent(student)}
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </CardContent>
@@ -198,6 +286,65 @@ export function StudentList() {
           ))}
         </div>
       )}
+
+      {/* Chat Modal */}
+      <Dialog open={!!selectedStudentChat} onOpenChange={() => setSelectedStudentChat(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] p-0">
+          <DialogHeader className="p-4 border-b">
+            <DialogTitle className="flex items-center gap-3">
+              <Avatar className="w-10 h-10">
+                <AvatarImage src={selectedStudentChat?.profile?.avatar_url || ""} />
+                <AvatarFallback>
+                  {selectedStudentChat?.profile?.full_name?.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <span>{selectedStudentChat?.profile?.full_name}</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            {selectedStudentChat && (
+              <ChatWindow
+                partnerId={selectedStudentChat.student_id}
+                partnerName={selectedStudentChat.profile?.full_name || "Student"}
+                partnerAvatar={selectedStudentChat.profile?.avatar_url || ""}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reschedule Modal */}
+      {selectedStudentReschedule && (
+        <RescheduleModal
+          studentId={selectedStudentReschedule.student_id}
+          studentName={selectedStudentReschedule.profile?.full_name || "Student"}
+          isOpen={!!selectedStudentReschedule}
+          onClose={() => setSelectedStudentReschedule(null)}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirmStudent} onOpenChange={() => setDeleteConfirmStudent(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Student</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove {deleteConfirmStudent?.profile?.full_name} from your student list? 
+              This will delete all sessions with this student. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteStudent}
+              disabled={isDeleting}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isDeleting ? "Removing..." : "Remove"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

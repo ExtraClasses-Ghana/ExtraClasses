@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { CredentialDeleteWarning } from "@/components/teacher/CredentialDeleteWarning";
 import { 
   FileText, Upload, CheckCircle, XCircle, Clock, 
-  RefreshCw, Loader2, Eye, Download 
+  RefreshCw, Loader2, Eye, Download, Trash2
 } from "lucide-react";
 
 interface VerificationDoc {
@@ -35,6 +36,9 @@ export default function TeacherCredentials() {
   const [documents, setDocuments] = useState<VerificationDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [deleteWarningOpen, setDeleteWarningOpen] = useState(false);
+  const [selectedDocForDelete, setSelectedDocForDelete] = useState<VerificationDoc | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   useEffect(() => {
@@ -141,6 +145,75 @@ export default function TeacherCredentials() {
     } finally {
       setUploading(null);
     }
+  };
+
+  const handleDeleteClick = (doc: VerificationDoc) => {
+    setSelectedDocForDelete(doc);
+    setDeleteWarningOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedDocForDelete || !user) return;
+
+    setIsDeleting(true);
+    try {
+      // Extract file path from URL
+      const urlParts = selectedDocForDelete.file_url.split("/");
+      const filePath = urlParts.slice(-2).join("/"); // Gets the last two parts (user_id/filename)
+
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from("verification-documents")
+        .remove([filePath]);
+
+      if (storageError) {
+        console.error("Storage deletion error:", storageError);
+        // Continue with DB deletion even if storage deletion fails
+      }
+
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from("verification_documents")
+        .delete()
+        .eq("id", selectedDocForDelete.id);
+
+      if (dbError) throw dbError;
+
+      // Log the deletion action
+      const { error: logError } = await supabase
+        .from("admin_notifications")
+        .insert({
+          type: "new_report",
+          title: "Credential Deleted",
+          message: `Teacher deleted their ${selectedDocForDelete.document_type.replace(/_/g, " ")} credential. This action has been logged.`,
+          related_user_id: user.id,
+          related_entity_id: selectedDocForDelete.id,
+        });
+
+      if (logError) {
+        console.error("Logging error:", logError);
+      }
+
+      // Update local state
+      setDocuments(documents.filter(d => d.id !== selectedDocForDelete.id));
+
+      toast.error("Credential deleted. Admin has been notified.", {
+        description: "Your account will be reviewed.",
+      });
+
+      setDeleteWarningOpen(false);
+      setSelectedDocForDelete(null);
+    } catch (error: any) {
+      console.error("Delete error:", error);
+      toast.error(error.message || "Failed to delete credential");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteWarningOpen(false);
+    setSelectedDocForDelete(null);
   };
 
   const getStatusIcon = (status: string) => {
@@ -259,6 +332,18 @@ export default function TeacherCredentials() {
                           )}
                           {doc ? "Update" : "Upload"}
                         </Button>
+                        {doc && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteClick(doc)}
+                            disabled={isDeleting || uploading === docType.value}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            title="Delete this credential"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -276,6 +361,14 @@ export default function TeacherCredentials() {
             </p>
           </CardContent>
         </Card>
+
+        <CredentialDeleteWarning
+          isOpen={deleteWarningOpen}
+          onConfirm={handleConfirmDelete}
+          onCancel={handleCancelDelete}
+          documentType={selectedDocForDelete?.document_type || ""}
+          isDeleting={isDeleting}
+        />
       </div>
     </TeacherDashboardLayout>
   );

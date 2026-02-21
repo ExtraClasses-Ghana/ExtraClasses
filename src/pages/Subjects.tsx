@@ -185,9 +185,9 @@ export default function Subjects() {
           <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
           <div className="container mx-auto px-4 relative z-10">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
               className="max-w-3xl mx-auto text-center"
             >
               <h1 className="text-4xl md:text-5xl font-display font-bold text-white mb-6">
@@ -226,9 +226,9 @@ export default function Subjects() {
                   return (
                     <motion.div
                       key={subject.id}
-                      initial={{ opacity: 0, y: 20 }}
+                      initial={{ opacity: 0, y: 24 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
+                      transition={{ delay: Math.min(index * 0.05, 0.6), duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
                     >
                       <Card className="h-full hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
                         <CardContent className="pt-6">
@@ -295,6 +295,12 @@ export default function Subjects() {
         {/* CTA Section */}
         <section className="py-16 bg-muted/30">
           <div className="container mx-auto px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+            >
             <Card className="bg-primary text-primary-foreground overflow-hidden">
               <CardContent className="p-8 md:p-12">
                 <div className="max-w-2xl mx-auto text-center">
@@ -313,6 +319,7 @@ export default function Subjects() {
                 </div>
               </CardContent>
             </Card>
+            </motion.div>
           </div>
         </section>
       </main>

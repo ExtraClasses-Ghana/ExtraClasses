@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
+import { TeacherBlockedPage } from "@/pages/dashboard/TeacherBlockedPage";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -8,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, role, loading } = useAuth();
+  const { user, role, profile, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -28,6 +29,11 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
       return <Navigate to="/admin/login" replace />;
     }
     return <Navigate to="/" state={{ from: location, openAuth: true }} replace />;
+  }
+
+  // Blocked teachers cannot access teacher dashboard; show reason (suspended teachers can still access, e.g. withdrawals)
+  if (allowedRoles?.includes("teacher") && role === "teacher" && profile?.status === "blocked") {
+    return <TeacherBlockedPage />;
   }
 
   if (allowedRoles && role && !allowedRoles.includes(role)) {

@@ -51,6 +51,38 @@ export default function CourseMaterials() {
     fetchSubjects();
   }, []);
 
+  // Subscribe to realtime updates so the page reflects live changes
+  useEffect(() => {
+    const materialsChannel = supabase
+      .channel('course_materials_updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'course_materials' },
+        (payload) => {
+          console.log('Realtime course_materials change:', payload);
+          fetchMaterials();
+        }
+      )
+      .subscribe();
+
+    const subjectsChannel = supabase
+      .channel('subjects_updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'subjects' },
+        (payload) => {
+          console.log('Realtime subjects change:', payload);
+          fetchSubjects();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(materialsChannel);
+      supabase.removeChannel(subjectsChannel);
+    };
+  }, []);
+
   const fetchMaterials = async () => {
     try {
       const { data, error } = await supabase
@@ -123,9 +155,9 @@ export default function CourseMaterials() {
           <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
           <div className="container mx-auto px-4 relative z-10">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
               className="max-w-3xl mx-auto text-center"
             >
               <h1 className="text-4xl md:text-5xl font-display font-bold text-white mb-6">
@@ -145,9 +177,9 @@ export default function CourseMaterials() {
               {categories.map((category, index) => (
                 <motion.div
                   key={category.name}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 24 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
+                  transition={{ delay: index * 0.08, duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
                 >
                   <Card className="hover:shadow-md transition-shadow cursor-pointer group">
                     <CardContent className="pt-6 flex items-center gap-4">
@@ -194,7 +226,7 @@ export default function CourseMaterials() {
                     key={material.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
+                    transition={{ delay: Math.min(index * 0.06, 0.5), duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
                   >
                     <Card className="h-full hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
                       <CardHeader className="pb-3">

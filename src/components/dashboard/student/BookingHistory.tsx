@@ -8,8 +8,10 @@ import {
   MapPin, 
   Star,
   Filter,
-  Download
+  Download,
+  Trash
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,6 +55,32 @@ export function BookingHistory() {
       fetchSessions();
     }
   }, [user, statusFilter]);
+
+  // Realtime subscription for sessions
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`student_booking_history_${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "sessions",
+          filter: `student_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log("Realtime session update for student:", payload);
+          fetchSessions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   const fetchSessions = async () => {
     try {
@@ -100,6 +128,23 @@ export function BookingHistory() {
         return "bg-red-100 text-red-800";
       default:
         return "bg-muted text-muted-foreground";
+    }
+  };
+
+  const [deletingSession, setDeletingSession] = useState<string | null>(null);
+
+  const handleDeleteSession = async (sessionId: string) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase.from("sessions").delete().eq("id", sessionId).eq("student_id", user.id);
+      if (error) throw error;
+      setSessions(prev => prev.filter(s => s.id !== sessionId));
+      toast({ title: "Deleted", description: "Session history entry deleted." });
+    } catch (err) {
+      console.error("Error deleting session:", err);
+      toast({ title: "Error", description: "Could not delete the session.", variant: "destructive" });
+    } finally {
+      setDeletingSession(null);
     }
   };
 
@@ -247,6 +292,12 @@ export function BookingHistory() {
                     <Badge className={getStatusColor(session.status)}>
                       {session.status}
                     </Badge>
+                    <div className="flex items-center justify-end gap-2 mt-2">
+                      <Button size="sm" variant="ghost" onClick={() => setDeletingSession(session.id)}>
+                        <Trash className="w-4 h-4 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
                     {session.status === "confirmed" && session.session_type === "online" && (
                       <Button
                         size="sm"
@@ -266,6 +317,22 @@ export function BookingHistory() {
                   </div>
                 </motion.div>
               ))}
+              <Dialog open={!!deletingSession} onOpenChange={() => setDeletingSession(null)}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Delete Record</DialogTitle>
+                    <DialogDescription>
+                      Are you sure you want to delete this record? This action cannot be undone.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <div className="flex gap-2">
+                      <Button variant="ghost" onClick={() => setDeletingSession(null)}>Cancel</Button>
+                      <Button variant="destructive" onClick={() => deletingSession && handleDeleteSession(deletingSession)}>Delete</Button>
+                    </div>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           )}
         </CardContent>

@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { Search, CalendarCheck, GraduationCap, ArrowRight } from "lucide-react";
 
 const steps = [
@@ -26,6 +27,8 @@ const steps = [
 ];
 
 export function HowItWorks() {
+  const navigate = useNavigate();
+
   return (
     <section id="how-it-works" className="py-24 bg-muted/50 relative overflow-hidden">
       {/* Background Pattern */}
@@ -37,10 +40,10 @@ export function HowItWorks() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Section Header */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="text-center max-w-2xl mx-auto mb-16"
         >
           <span className="inline-block px-4 py-1.5 rounded-full bg-secondary/10 text-secondary text-sm font-semibold mb-4">
@@ -62,8 +65,8 @@ export function HowItWorks() {
               key={step.number}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: index * 0.2 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.5, delay: index * 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
               className="relative group"
             >
               {/* Connector Line */}
@@ -111,7 +114,10 @@ export function HowItWorks() {
           transition={{ duration: 0.6, delay: 0.8 }}
           className="text-center mt-16"
         >
-          <button className="btn-coral inline-flex items-center gap-2">
+          <button
+            className="btn-coral inline-flex items-center gap-2"
+            onClick={() => navigate("/", { state: { openAuth: true, defaultTab: "signup" } })}
+          >
             Get Started Today
             <ArrowRight className="w-5 h-5" />
           </button>
