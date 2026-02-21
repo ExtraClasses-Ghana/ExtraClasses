@@ -1,17 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-/** Map Education Category to subject filter level (subjects use Basic/Secondary/Tertiary) */
-function mapCategoryToSubjectLevel(category: string | null): string | null {
-  if (!category) return null;
-  if (category === "Basic" || category === "JHS") return "Basic";
-  if (category === "SHS") return "Secondary";
-  if (["College Of Healths", "University", "Cyber Secutity", "Graphic Design", "Web Design"].includes(category)) {
-    return "Tertiary";
-  }
-  return "Tertiary"; // fallback for any new categories
-}
-
 export interface SubjectWithLevel {
   id: string;
   name: string;
@@ -27,11 +16,11 @@ export interface SubjectWithLevel {
 }
 
 /**
- * Fetch subjects filtered by education level and optionally sub-category
+ * Fetch subjects filtered by education level (same format as profiles: Basic, JHS, SHS, etc.)
  */
 export function useSubjectsByEducationLevel(
   educationLevel: string | null,
-  educationSubCategory?: string | null
+  _educationSubCategory?: string | null
 ) {
   const [subjects, setSubjects] = useState<SubjectWithLevel[]>([]);
   const [loading, setLoading] = useState(false);
@@ -48,20 +37,12 @@ export function useSubjectsByEducationLevel(
         setLoading(true);
         setError(null);
 
-        const subjectLevel = mapCategoryToSubjectLevel(educationLevel);
-
-        let query = supabase
+        const { data, error: queryError } = await supabase
           .from("subjects")
           .select("*")
           .eq("is_active", true)
-          .eq("education_level", subjectLevel);
-
-        // If sub-category is provided and it's a tertiary-level category, filter by it
-        if (educationSubCategory && subjectLevel === "Tertiary") {
-          query = query.eq("education_sub_category", educationSubCategory);
-        }
-
-        const { data, error: queryError } = await query.order("name", { ascending: true });
+          .eq("education_level", educationLevel)
+          .order("name", { ascending: true });
 
         if (queryError) throw queryError;
         setSubjects((data as SubjectWithLevel[]) || []);
@@ -74,7 +55,7 @@ export function useSubjectsByEducationLevel(
     };
 
     fetchSubjects();
-  }, [educationLevel, educationSubCategory]);
+  }, [educationLevel]);
 
   return { subjects, loading, error };
 }

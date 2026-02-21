@@ -21,6 +21,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { 
   Plus, 
@@ -32,6 +39,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { EDUCATION_CATEGORIES } from "@/hooks/useEducationLevel";
 
 interface Subject {
   id: string;
@@ -42,6 +50,8 @@ interface Subject {
   teacher_count: number;
   is_active: boolean;
   created_at: string;
+  education_level: string | null;
+  education_sub_category: string | null;
 }
 
 export default function AdminSubjects() {
@@ -57,6 +67,7 @@ export default function AdminSubjects() {
   const [description, setDescription] = useState("");
   const [icon, setIcon] = useState("");
   const [topics, setTopics] = useState("");
+  const [educationLevel, setEducationLevel] = useState<string>(EDUCATION_CATEGORIES[0]);
 
   useEffect(() => {
     fetchSubjects();
@@ -87,6 +98,7 @@ export default function AdminSubjects() {
     setDescription("");
     setIcon("");
     setTopics("");
+    setEducationLevel(EDUCATION_CATEGORIES[0]);
     setEditingSubject(null);
   };
 
@@ -96,6 +108,7 @@ export default function AdminSubjects() {
     setDescription(subject.description || "");
     setIcon(subject.icon || "");
     setTopics(subject.topics?.join(", ") || "");
+    setEducationLevel(subject.education_level || EDUCATION_CATEGORIES[0]);
     setIsDialogOpen(true);
   };
 
@@ -115,6 +128,8 @@ export default function AdminSubjects() {
         icon: icon || null,
         topics: topicsArray,
         is_active: true,
+        education_level: educationLevel || EDUCATION_CATEGORIES[0],
+        education_sub_category: null,
       };
 
       if (editingSubject) {
@@ -219,6 +234,28 @@ export default function AdminSubjects() {
                     placeholder="e.g., Mathematics"
                     required
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Education Level *</Label>
+                  <Select
+                    value={educationLevel}
+                    onValueChange={setEducationLevel}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select education level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EDUCATION_CATEGORIES.map((level) => (
+                        <SelectItem key={level} value={level}>
+                          {level}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Subjects are shown to teachers under this education level when they fill their profile.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -343,6 +380,7 @@ export default function AdminSubjects() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Subject Name</TableHead>
+                      <TableHead>Education Level</TableHead>
                       <TableHead>Description</TableHead>
                       <TableHead>Topics</TableHead>
                       <TableHead>Teachers</TableHead>
@@ -355,6 +393,11 @@ export default function AdminSubjects() {
                       <TableRow key={subject.id}>
                         <TableCell className="font-medium">
                           {subject.name}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {subject.education_level || "—"}
+                          </Badge>
                         </TableCell>
                         <TableCell className="max-w-[200px] truncate">
                           {subject.description || "—"}

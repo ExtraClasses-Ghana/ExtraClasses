@@ -35,7 +35,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { ImageCropModal } from "@/components/shared/ImageCropModal";
-import { useSubjects } from "@/hooks/useSubjects";
+import { useSubjectsByEducationLevel, useAllSubjects } from "@/hooks/useSubjectsByEducationLevel";
 import { useTeacherAccountStatus } from "@/hooks/useTeacherAccountStatus";
 import { AccountStatusWidget } from "@/components/teacher/AccountStatusWidget";
 
@@ -59,8 +59,16 @@ export default function TeacherSettings() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Fetch subjects from database
-  const { subjects, loading: subjectsLoading } = useSubjects();
+  // Teacher's education category (from profile) — used to filter subjects by education level
+  const [teacherEducationLevel, setTeacherEducationLevel] = useState<string | null>(null);
+  const [teacherEducationSubCategory, setTeacherEducationSubCategory] = useState<string | null>(null);
+  const { subjects: subjectsByLevel, loading: subjectsByLevelLoading } = useSubjectsByEducationLevel(
+    teacherEducationLevel,
+    teacherEducationSubCategory
+  );
+  const { subjects: allSubjects, loading: allSubjectsLoading } = useAllSubjects();
+  const subjects = teacherEducationLevel ? subjectsByLevel : allSubjects;
+  const subjectsLoading = teacherEducationLevel ? subjectsByLevelLoading : allSubjectsLoading;
   
   // Fetch teacher account status
   const { accountStatus } = useTeacherAccountStatus(user?.id);
@@ -170,6 +178,8 @@ export default function TeacherSettings() {
         languages: data.languages || [],
         achievements: (data as any).achievements || [],
       }));
+      setTeacherEducationLevel((data as any).education_level ?? null);
+      setTeacherEducationSubCategory((data as any).education_sub_category ?? null);
     }
   };
 
@@ -600,6 +610,11 @@ export default function TeacherSettings() {
 
             <div className="space-y-2">
               <Label>Subjects You Teach</Label>
+              {teacherEducationLevel && (
+                <p className="text-xs text-muted-foreground">
+                  Showing subjects for your education category: <strong>{teacherEducationLevel}</strong>
+                </p>
+              )}
               {subjectsLoading ? (
                 <div className="flex items-center justify-center py-4">
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
