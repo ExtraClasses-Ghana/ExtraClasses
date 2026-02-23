@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 const benefits = [
   "Verified & qualified teachers",
@@ -12,6 +13,9 @@ const benefits = [
 
 export function CTASection() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  if (user) return null;
 
   return (
     <section className="py-24 relative overflow-hidden">

@@ -11,6 +11,7 @@ import {
   Users,
   ChevronRight
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -145,9 +146,11 @@ export function StudentOverview() {
             Here's what's happening with your learning journey
           </p>
         </div>
-        <Button className="btn-coral" onClick={() => window.location.href = '/teachers'}>
-          <BookOpen className="w-4 h-4 mr-2" />
-          Find a Teacher
+        <Button className="btn-coral" asChild>
+          <Link to="/teachers">
+            <BookOpen className="w-4 h-4 mr-2" />
+            Find a Teacher
+          </Link>
         </Button>
       </div>
 
@@ -238,8 +241,10 @@ export function StudentOverview() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg font-semibold">Upcoming Sessions</CardTitle>
-          <Button variant="ghost" size="sm" onClick={() => window.location.href = '/dashboard/student/history'}>
-            View All <ChevronRight className="w-4 h-4 ml-1" />
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/dashboard/student/history">
+              View All <ChevronRight className="w-4 h-4 ml-1" />
+            </Link>
           </Button>
         </CardHeader>
         <CardContent>
@@ -251,8 +256,8 @@ export function StudentOverview() {
             <div className="text-center py-8">
               <Calendar className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
               <p className="text-muted-foreground">No upcoming sessions</p>
-              <Button className="mt-4" variant="outline" onClick={() => window.location.href = '/teachers'}>
-                Book a Session
+              <Button className="mt-4" variant="outline" asChild>
+                <Link to="/teachers">Book a Session</Link>
               </Button>
             </div>
           ) : (

@@ -46,6 +46,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminRequests from "./pages/admin/AdminRequests";
 import AdminTWR from "./pages/admin/AdminTWR";
+import AdminSessions from "./pages/admin/AdminSessions";
 
 // UI Components (after pages to avoid circular deps)
 import { Toaster } from "@/components/ui/toaster";
@@ -257,6 +258,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["admin"]}>
                   <AdminComplaints />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/sessions"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AdminSessions />
                 </ProtectedRoute>
               }
             />

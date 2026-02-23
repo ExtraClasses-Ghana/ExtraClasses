@@ -270,7 +270,7 @@ export function VideoCallInterface({
           initial={{ x: "100%" }}
           animate={{ x: 0 }}
           exit={{ x: "100%" }}
-          className="absolute top-0 right-0 bottom-0 w-80 bg-background/95 backdrop-blur-sm z-30 flex flex-col border-l border-border"
+          className="absolute top-0 right-0 bottom-0 w-full sm:w-80 bg-background/95 backdrop-blur-sm z-30 flex flex-col border-l border-border"
         >
           <div className="flex items-center justify-between p-4 border-b border-border">
             <span className="font-medium text-sm">Chat</span>

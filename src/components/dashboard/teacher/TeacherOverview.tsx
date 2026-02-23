@@ -10,6 +10,7 @@ import {
   ArrowUpRight,
   ChevronRight
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -372,29 +373,29 @@ export function TeacherOverview() {
             <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button 
-              className="w-full justify-start" 
-              variant="outline"
-              onClick={() => window.location.href = '/dashboard/teacher/availability'}
-            >
-              <Calendar className="w-4 h-4 mr-2" />
-              Update Availability
+            <Button className="w-full justify-start" variant="outline" asChild>
+              <Link to="/dashboard/teacher/availability">
+                <Calendar className="w-4 h-4 mr-2" />
+                Update Availability
+              </Link>
             </Button>
-            <Button 
-              className="w-full justify-start" 
-              variant="outline"
-              onClick={() => window.location.href = '/dashboard/teacher/students'}
-            >
-              <Users className="w-4 h-4 mr-2" />
-              View Students
+            <Button className="w-full justify-start" variant="outline" asChild>
+              <Link to="/dashboard/teacher/students">
+                <Users className="w-4 h-4 mr-2" />
+                View Students
+              </Link>
             </Button>
-            <Button 
-              className="w-full justify-start" 
-              variant="outline"
-              onClick={() => window.location.href = '/dashboard/teacher/earnings'}
-            >
-              <TrendingUp className="w-4 h-4 mr-2" />
-              View Earnings Report
+            <Button className="w-full justify-start" variant="outline" asChild>
+              <Link to="/dashboard/teacher/earnings">
+                <TrendingUp className="w-4 h-4 mr-2" />
+                View Earnings Report
+              </Link>
+            </Button>
+            <Button className="w-full justify-start" variant="outline" asChild>
+              <Link to="/dashboard/teacher/sessions">
+                <ArrowUpRight className="w-4 h-4 mr-2" />
+                View All Sessions
+              </Link>
             </Button>
           </CardContent>
         </Card>

@@ -14,6 +14,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -30,7 +40,8 @@ import {
   MessageSquare,
   User,
   Calendar,
-  Filter
+  Filter,
+  Trash2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -61,6 +72,8 @@ export default function AdminComplaints() {
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
   const [resolutionNotes, setResolutionNotes] = useState("");
   const [isResolving, setIsResolving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchComplaints();
@@ -134,6 +147,23 @@ export default function AdminComplaints() {
       toast.error("Failed to update complaint");
     } finally {
       setIsResolving(false);
+    }
+  };
+
+  const handleDeleteComplaint = async (id: string) => {
+    setDeletingId(id);
+    try {
+      const { error } = await supabase.from("complaints").delete().eq("id", id);
+      if (error) throw error;
+      setComplaints((prev) => prev.filter((c) => c.id !== id));
+      setDeleteConfirmId(null);
+      if (selectedComplaint?.id === id) setSelectedComplaint(null);
+      toast.success("Complaint deleted");
+    } catch (err) {
+      console.error("Error deleting complaint:", err);
+      toast.error("Failed to delete complaint");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -317,17 +347,29 @@ export default function AdminComplaints() {
                           </span>
                         </div>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedComplaint(complaint);
-                          setResolutionNotes(complaint.resolution_notes || "");
-                        }}
-                      >
-                        <Eye className="w-4 h-4 mr-1" />
-                        Review
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedComplaint(complaint);
+                            setResolutionNotes(complaint.resolution_notes || "");
+                          }}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          Review
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => setDeleteConfirmId(complaint.id)}
+                          disabled={deletingId === complaint.id}
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Delete
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -433,6 +475,28 @@ export default function AdminComplaints() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={() => !deletingId && setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete complaint?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove the complaint from the database. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!deletingId}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteConfirmId && handleDeleteComplaint(deleteConfirmId)}
+              disabled={!!deletingId}
+            >
+              {deletingId ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminDashboardLayout>
   );
 }

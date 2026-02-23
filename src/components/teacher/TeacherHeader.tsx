@@ -112,10 +112,10 @@ export function TeacherHeader({ teacher, onBookSession, onMessage }: TeacherHead
   return (
     <>
       <section className="relative bg-gradient-to-br from-primary via-primary/95 to-accent/20 pt-24 pb-12">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-10 w-64 h-64 bg-accent rounded-full blur-3xl" />
-          <div className="absolute bottom-10 right-20 w-80 h-80 bg-secondary rounded-full blur-3xl" />
+        {/* Background Pattern (hidden on small screens to avoid overflow) */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
+          <div className="hidden lg:block absolute top-20 left-10 w-64 h-64 bg-accent rounded-full blur-3xl" />
+          <div className="hidden lg:block absolute bottom-10 right-20 w-80 h-80 bg-secondary rounded-full blur-3xl" />
         </div>
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
