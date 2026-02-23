@@ -29,6 +29,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
@@ -65,6 +66,7 @@ export default function AdminStudents() {
   }>({ open: false, type: null, student: null });
   const [actionReason, setActionReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [imageModalUrl, setImageModalUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetchStudents();
@@ -192,55 +194,54 @@ export default function AdminStudents() {
       // First validate data completeness
       await validateStudentData();
 
-      // Fetch all student roles with comprehensive data
-      const { data: studentRoles, error } = await supabase
-        .from("user_roles")
-        .select("user_id, created_at, role")
-        .eq("role", "student")
-        .order("created_at", { ascending: false });
+      // Call the helper RPC to get authenticated students with profile data
+      const rpcClient = supabase as unknown as {
+        rpc: (fn: string, params?: unknown) => Promise<{ data: unknown; error: unknown }>
+      };
 
-      if (error) throw error;
+      const { data: rpcData, error: rpcError } = await rpcClient.rpc('get_admin_students');
+      if (rpcError) throw rpcError;
 
-      console.log(`Found ${studentRoles?.length || 0} student roles`);
+      const rows = (rpcData as unknown) as Array<{
+        id: string;
+        email: string;
+        full_name: string | null;
+        phone: string | null;
+        avatar_url: string | null;
+        region: string | null;
+        status: string | null;
+        role: string;
+        role_assigned_at: string | null;
+        user_created_at: string | null;
+      }>;
 
       const studentsWithData = await Promise.all(
-        (studentRoles || []).map(async (student) => {
-          // Fetch profile - use maybeSingle to handle cases where profile doesn't exist yet
-          const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("full_name, email, phone, avatar_url, region, status, status_reason")
-            .eq("user_id", student.user_id)
-            .maybeSingle();
-
-          if (profileError) {
-            console.warn(`Profile fetch error for user ${student.user_id}:`, profileError);
-          }
-
+        rows.map(async (r) => {
           // Fetch session stats - get all sessions for this student
           const { data: sessions, error: sessionsError } = await supabase
             .from("sessions")
             .select("amount, status")
-            .eq("student_id", student.user_id);
+            .eq("student_id", r.id);
 
           if (sessionsError) {
-            console.warn(`Session fetch error for user ${student.user_id}:`, sessionsError);
+            console.warn(`Session fetch error for user ${r.id}:`, sessionsError);
           }
 
-          const sessionCount = sessions?.length || 0;
-          const totalSpent = sessions
+          const sessionCount = (sessions as any[])?.length || 0;
+          const totalSpent = (sessions as any[])
             ?.filter(s => s.status === "completed")
             .reduce((sum, s) => sum + Number(s.amount || 0), 0) || 0;
 
           return {
-            ...student,
-            profile: profile || {
-              full_name: "Profile Not Complete",
-              email: "Not provided",
-              phone: null,
-              avatar_url: null,
-              region: null,
-              status: "pending",
-              status_reason: "Profile setup incomplete"
+            user_id: r.id,
+            created_at: r.role_assigned_at || r.user_created_at || new Date().toISOString(),
+            profile: {
+              full_name: r.full_name || "Profile Not Complete",
+              email: r.email || "Not provided",
+              avatar_url: r.avatar_url || null,
+              region: r.region || null,
+              status: r.status || "pending",
+              status_reason: null
             },
             sessionCount,
             totalSpent
@@ -248,23 +249,13 @@ export default function AdminStudents() {
         })
       );
 
-      console.log(`Processed ${studentsWithData.length} student records`);
       setStudents(studentsWithData);
 
-      // Get recent registrations (last 10) - ensure we have valid data
-      const validStudents = studentsWithData.filter(student => student && student.user_id);
-      const recentStudents = validStudents
+      // Get recent registrations (last 10)
+      const recentStudents = studentsWithData
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 10);
       setRecentRegistrations(recentStudents);
-
-      // Log summary for debugging
-      const activeStudents = validStudents.filter(s => s.profile?.status === "active").length;
-      const suspendedStudents = validStudents.filter(s => s.profile?.status === "suspended").length;
-      const blockedStudents = validStudents.filter(s => s.profile?.status === "blocked").length;
-      const pendingStudents = validStudents.filter(s => s.profile?.status === "pending" || !s.profile?.status).length;
-
-      console.log(`Student Summary: Total: ${validStudents.length}, Active: ${activeStudents}, Suspended: ${suspendedStudents}, Blocked: ${blockedStudents}, Pending: ${pendingStudents}`);
 
     } catch (error) {
       console.error("Error fetching students:", error);
@@ -465,9 +456,12 @@ export default function AdminStudents() {
               <div className="space-y-4">
                 {recentRegistrations.slice(0, 5).map((student) => (
                   <div key={student.user_id} className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                      <Users className="w-4 h-4 text-primary" />
-                    </div>
+                    <button onClick={() => setImageModalUrl(student.profile?.avatar_url || null)} className="rounded-full overflow-hidden p-0" aria-label={`View profile image of ${student.profile?.full_name || 'student'}`} title={`View profile image of ${student.profile?.full_name || 'student'}`}>
+                      <Avatar className="w-8 h-8 cursor-pointer">
+                        <AvatarImage src={student.profile?.avatar_url || ""} />
+                        <AvatarFallback className="bg-primary/20 text-primary">{student.profile?.full_name?.charAt(0) || "S"}</AvatarFallback>
+                      </Avatar>
+                    </button>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{student.profile?.full_name}</p>
                       <p className="text-xs text-muted-foreground">
@@ -637,9 +631,12 @@ export default function AdminStudents() {
                     <tr key={student.user_id} className="border-b border-border">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                            <Users className="w-5 h-5 text-primary" />
-                          </div>
+                          <button onClick={() => setImageModalUrl(student.profile?.avatar_url || null)} className="rounded-full overflow-hidden p-0" aria-label={`View profile image of ${student.profile?.full_name || 'student'}`} title={`View profile image of ${student.profile?.full_name || 'student'}`}>
+                            <Avatar className="w-10 h-10 cursor-pointer">
+                              <AvatarImage src={student.profile?.avatar_url || ""} />
+                              <AvatarFallback className="bg-primary/20 text-primary">{student.profile?.full_name?.charAt(0) || "S"}</AvatarFallback>
+                            </Avatar>
+                          </button>
                           <div>
                             <p className="font-medium">{student.profile?.full_name}</p>
                             <p className="text-sm text-muted-foreground">{student.profile?.email}</p>
@@ -673,7 +670,7 @@ export default function AdminStudents() {
                               asChild
                               title="Email student"
                             >
-                              <a href={`mailto:${student.profile.email}`}>
+                              <a href={`mailto:${student.profile.email}`} aria-label={`Email ${student.profile?.full_name || 'student'}`} title={`Email ${student.profile?.full_name || 'student'}`}>
                                 <Mail className="w-4 h-4" />
                               </a>
                             </Button>
@@ -684,6 +681,8 @@ export default function AdminStudents() {
                               size="sm"
                               onClick={() => setActionModal({ open: true, type: "restore", student })}
                               className="text-green-500 hover:text-green-600"
+                              aria-label={`Restore account for ${student.profile?.full_name || 'student'}`}
+                              title={`Restore ${student.profile?.full_name || 'student'}`}
                             >
                               <RotateCcw className="w-4 h-4" />
                             </Button>
@@ -694,6 +693,8 @@ export default function AdminStudents() {
                                 size="sm"
                                 onClick={() => setActionModal({ open: true, type: "suspend", student })}
                                 className="text-amber-500 hover:text-amber-600"
+                                aria-label={`Suspend account for ${student.profile?.full_name || 'student'}`}
+                                title={`Suspend ${student.profile?.full_name || 'student'}`}
                               >
                                 <AlertTriangle className="w-4 h-4" />
                               </Button>
@@ -702,6 +703,8 @@ export default function AdminStudents() {
                                 size="sm"
                                 onClick={() => setActionModal({ open: true, type: "block", student })}
                                 className="text-destructive hover:text-destructive/80"
+                                aria-label={`Block account for ${student.profile?.full_name || 'student'}`}
+                                title={`Block ${student.profile?.full_name || 'student'}`}
                               >
                                 <Ban className="w-4 h-4" />
                               </Button>
@@ -710,7 +713,8 @@ export default function AdminStudents() {
                                 size="sm"
                                 onClick={() => setActionModal({ open: true, type: "delete", student })}
                                 className="text-destructive hover:text-destructive/80"
-                                title="Delete account"
+                                aria-label={`Delete account for ${student.profile?.full_name || 'student'}`}
+                                title={`Delete ${student.profile?.full_name || 'student'}`}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
@@ -773,6 +777,25 @@ export default function AdminStudents() {
               {actionLoading ? "Processing..." : actionModal.type === "restore" ? "Restore Account" : actionModal.type === "suspend" ? "Suspend Account" : actionModal.type === "delete" ? "Yes, Delete Account" : "Block Account"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image viewer modal */}
+      <Dialog open={!!imageModalUrl} onOpenChange={(open) => { if (!open) setImageModalUrl(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Profile image</DialogTitle>
+            <DialogDescription />
+          </DialogHeader>
+          <div className="flex items-center justify-center">
+            {imageModalUrl ? (
+              // full-size responsive image
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={imageModalUrl} alt="Profile image" className="max-w-full max-h-[80vh] object-contain" />
+            ) : (
+              <div className="text-muted-foreground">No image available</div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </AdminDashboardLayout>

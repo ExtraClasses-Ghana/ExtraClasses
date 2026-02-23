@@ -251,7 +251,7 @@ export function BookingHistory() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="flex items-center gap-4 p-4 rounded-xl border border-border hover:border-primary/30 transition-colors"
+                  className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl border border-border hover:border-primary/30 transition-colors"
                 >
                   <Avatar className="w-12 h-12">
                     <AvatarImage src={session.teacher?.avatar_url || ""} />
@@ -287,12 +287,12 @@ export function BookingHistory() {
                       </span>
                     </div>
                   </div>
-                  <div className="text-right flex-shrink-0">
+                  <div className="text-right flex-shrink-0 mt-3 sm:mt-0">
                     <p className="font-semibold">GH₵{Number(session.amount).toFixed(0)}</p>
                     <Badge className={getStatusColor(session.status)}>
                       {session.status}
                     </Badge>
-                    <div className="flex items-center justify-end gap-2 mt-2">
+                    <div className="flex items-center gap-2 mt-2 sm:mt-0 justify-end">
                       <Button size="sm" variant="ghost" onClick={() => setDeletingSession(session.id)}>
                         <Trash className="w-4 h-4 mr-1" />
                         Delete

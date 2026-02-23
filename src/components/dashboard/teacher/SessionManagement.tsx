@@ -286,9 +286,9 @@ export function SessionManagement() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      className="p-4 rounded-xl border border-border hover:border-primary/30 transition-colors"
-                    >
-                      <div className="flex items-start gap-4">
+                        className="p-4 rounded-xl border border-border hover:border-primary/30 transition-colors"
+                      >
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                         <Avatar className="w-12 h-12">
                           <AvatarImage src={session.student?.avatar_url || ""} />
                           <AvatarFallback className="bg-primary/10 text-primary">
@@ -331,7 +331,7 @@ export function SessionManagement() {
                             </p>
                           )}
                         </div>
-                        <div className="text-right flex-shrink-0">
+                        <div className="text-right flex-shrink-0 mt-3 sm:mt-0">
                           <p className="font-semibold text-lg">GH₵{Number(session.amount).toFixed(0)}</p>
                           {session.status === "pending" && (
                             <div className="flex gap-2 mt-2">

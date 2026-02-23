@@ -22,16 +22,17 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Wallet, Smartphone, History, CheckCircle, Clock, Loader2, Send } from "lucide-react";
-import mtnLogo from "@/assets/MTN.png";
-import telecelLogo from "@/assets/Telecel-icon-red.png";
-import atghanaLogo from "@/assets/ATghana.png";
+// Remote logos provided by product team
+const mtnLogoUrl = "https://momodeveloper.mtn.com/content/momo_mtna.png";
+const telecelLogoUrl = "https://www.telecel.com.gh/img/Telecel-Icon-Red.png";
+const airtelTigoLogoUrl = "https://download.logo.wine/logo/Airtel_Uganda/Airtel_Uganda-Logo.wine.png";
 
 type WithdrawalStatus = "pending" | "withdrawing" | "processing" | "paid";
 
 const NETWORKS = [
-  { id: "mtn", label: "MTN Mobile Money", logo: mtnLogo },
-  { id: "telecel", label: "Telecel (Vodafone) Cash", logo: telecelLogo },
-  { id: "atghana", label: "AT Ghana", logo: atghanaLogo },
+  { id: "mtn", label: "MTN Mobile Money", logo: mtnLogoUrl },
+  { id: "telecel", label: "Telecel (Vodafone) Cash", logo: telecelLogoUrl },
+  { id: "airtel", label: "AirtelTigo", logo: airtelTigoLogoUrl },
 ] as const;
 
 const networkMap = Object.fromEntries(NETWORKS.map((n) => [n.id, n])) as Record<

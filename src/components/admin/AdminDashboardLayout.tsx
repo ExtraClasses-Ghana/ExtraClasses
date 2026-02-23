@@ -1,9 +1,10 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, 
   Users, 
   UserCheck, 
+  Calendar,
   DollarSign, 
   Settings, 
   Bell,
@@ -18,6 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNotificationCount } from "@/hooks/useNotificationCount";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/extraclasses-logo.webp";
 
 interface AdminDashboardLayoutProps {
@@ -34,6 +36,7 @@ const navItems = [
   { href: "/admin/subjects", icon: FileText, label: "Subjects" },
   { href: "/admin/course-materials", icon: FileText, label: "Course Materials" },
   { href: "/admin/complaints", icon: FileText, label: "Complaints" },
+  { href: "/admin/sessions", icon: Calendar, label: "Sessions" },
   { href: "/admin/payments", icon: DollarSign, label: "Payments" },
   { href: "/admin/analytics", icon: TrendingUp, label: "Analytics" },
   { href: "/admin/notifications", icon: Bell, label: "Notifications" },
@@ -46,6 +49,44 @@ export function AdminDashboardLayout({ children, title, subtitle }: AdminDashboa
   const { profile, signOut } = useAuth();
   const { unreadCount } = useNotificationCount();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pendingSessionsCount, setPendingSessionsCount] = useState<number>(0);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchPending = async () => {
+      try {
+        const today = new Date().toISOString().split("T")[0];
+        const { count, error } = await supabase
+          .from("sessions")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "pending")
+          .gte("session_date", today);
+
+        if (error) throw error;
+        if (!mounted) return;
+        setPendingSessionsCount(count ?? 0);
+      } catch (err) {
+        console.error("Error fetching pending sessions count:", err);
+      }
+    };
+
+    fetchPending();
+
+    const channel = supabase
+      .channel("admin_pending_sessions")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "sessions" },
+        () => fetchPending()
+      )
+      .subscribe();
+
+    return () => {
+      mounted = false;
+      void supabase.removeChannel(channel);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -96,11 +137,15 @@ export function AdminDashboardLayout({ children, title, subtitle }: AdminDashboa
                 >
                   <item.icon className="w-5 h-5" />
                   <span className="font-medium">{item.label}</span>
-                  {item.badge && (
+                  {item.href === "/admin/sessions" && pendingSessionsCount > 0 ? (
+                    <Badge variant="destructive" className="ml-auto text-xs">
+                      {pendingSessionsCount > 99 ? "99+" : pendingSessionsCount}
+                    </Badge>
+                  ) : item.badge ? (
                     <Badge variant="destructive" className="ml-auto text-xs">
                       New
                     </Badge>
-                  )}
+                  ) : null}
                 </Link>
               );
             })}

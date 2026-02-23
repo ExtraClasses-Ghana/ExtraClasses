@@ -326,7 +326,7 @@ export function TeacherOverview() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
+                    className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
                   >
                     <Avatar className="w-10 h-10">
                       <AvatarImage src={session.student?.avatar_url || ""} />
@@ -354,7 +354,7 @@ export function TeacherOverview() {
                         </span>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right mt-3 sm:mt-0">
                       <p className="font-semibold">GH₵{Number(session.amount).toFixed(0)}</p>
                       <Badge className={getStatusColor(session.status)}>
                         {session.status}

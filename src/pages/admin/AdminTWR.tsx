@@ -4,9 +4,10 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import mtnLogo from "@/assets/MTN.png";
-import telecelLogo from "@/assets/Telecel-icon-red.png";
-import atghanaLogo from "@/assets/ATghana.png";
+// Remote logos provided by product team
+const mtnLogoUrl = "https://momodeveloper.mtn.com/content/momo_mtna.png";
+const telecelLogoUrl = "https://www.telecel.com.gh/img/Telecel-Icon-Red.png";
+const airtelTigoLogoUrl = "https://download.logo.wine/logo/Airtel_Uganda/Airtel_Uganda-Logo.wine.png";
 
 const STATUS: Array<{ value: string; label: string }> = [
   { value: "pending", label: "Pending" },
@@ -53,7 +54,7 @@ export default function AdminTWRPage() {
               try {
                 const parsed = typeof accountDisplay === "string" && accountDisplay.startsWith("{") ? JSON.parse(accountDisplay) : null;
                 if (parsed && parsed.provider && parsed.number) {
-                  const logo = parsed.provider === "mtn" ? mtnLogo : parsed.provider === "telecel" ? telecelLogo : atghanaLogo;
+                  const logo = parsed.provider === "mtn" ? mtnLogoUrl : parsed.provider === "telecel" ? telecelLogoUrl : airtelTigoLogoUrl;
                   accountDisplay = (
                     <div className="flex items-center gap-2">
                       <img src={logo} alt={parsed.provider} className="h-5 w-5 sm:h-6 sm:w-6 object-contain shrink-0" />
@@ -96,7 +97,7 @@ export default function AdminTWRPage() {
                     try {
                       const ad = typeof selected.account_details === "string" && selected.account_details.startsWith("{") ? JSON.parse(selected.account_details) : null;
                       if (ad && ad.provider && ad.number) {
-                        const logo = ad.provider === "mtn" ? mtnLogo : ad.provider === "telecel" ? telecelLogo : atghanaLogo;
+                        const logo = ad.provider === "mtn" ? mtnLogoUrl : ad.provider === "telecel" ? telecelLogoUrl : airtelTigoLogoUrl;
                         return (<span className="flex items-center gap-2"><img src={logo} alt={ad.provider} className="h-5 shrink-0" />{ad.number}</span>);
                       }
                     } catch (e) {}

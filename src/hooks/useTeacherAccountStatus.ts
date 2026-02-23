@@ -155,7 +155,7 @@ export function useTeacherAccountStatus(userId: string | undefined) {
       )
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    return () => { void supabase.removeChannel(channel); };
   }, [userId]);
 
   return { accountStatus, loading, error };

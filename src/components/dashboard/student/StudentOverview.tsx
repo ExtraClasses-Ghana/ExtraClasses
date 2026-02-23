@@ -268,7 +268,7 @@ export function StudentOverview() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
+                  className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
                 >
                   <Avatar className="w-12 h-12">
                     <AvatarImage src={session.teacher?.avatar_url || ""} />
