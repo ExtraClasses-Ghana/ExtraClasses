@@ -1,13 +1,11 @@
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, HashRouter } from "react-router-dom";
+import { BrowserRouter } from "react-router-dom";
 import "./index.css";
 
 console.log("App mounting");
 
-// Use BrowserRouter during development for clean URLs.
-// Use HashRouter in production builds so direct URL access and refresh
-// work on static hosts that don't provide server-side SPA fallback.
-const Router = import.meta.env.PROD ? HashRouter : BrowserRouter;
+// Use BrowserRouter for clean URLs.
+// vercel.json rewrite rule handles SPA routing for both dev and production.
 
 // Global error handlers: render a visible error message on the page
 // instead of a white screen so we can see what's failing at runtime.
@@ -45,9 +43,9 @@ import App from "./App";
 
 try {
   createRoot(document.getElementById("root")!).render(
-    <Router>
+    <BrowserRouter>
       <App />
-    </Router>
+    </BrowserRouter>
   );
 } catch (err) {
   // fallback to the same fatal renderer used above.
