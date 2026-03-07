@@ -17,9 +17,11 @@ import {
   MapPin,
   User,
   Search,
-  
+  FileText,
+  Download,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { generateSessionsPDF, generateSessionsExcel, generateSessionsWord, SessionExportData } from "@/lib/sessionExport";
 
 interface SessionItem {
   id: string;
@@ -70,6 +72,7 @@ export default function AdminSessions() {
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [changingStatusId, setChangingStatusId] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const { toast } = useToast();
 
   const fetchSessions = useCallback(async () => {
@@ -158,6 +161,115 @@ export default function AdminSessions() {
     }
   };
 
+  const formatSessionsForExport = (): SessionExportData[] => {
+    // Format the already-loaded sessions for export without making RPC call
+    return filtered.map(s => ({
+      id: s.id,
+      subject: s.subject,
+      session_date: format(new Date(s.session_date), 'yyyy-MM-dd'),
+      start_time: s.start_time,
+      end_time: s.start_time, // placeholder, will use duration instead
+      duration: `${Math.floor(s.duration_minutes / 60)}h ${s.duration_minutes % 60}m`,
+      session_type: s.session_type,
+      status: s.status,
+      student_name: s.student?.full_name || 'Unknown',
+      student_email: s.student?.email || '',
+      teacher_name: s.teacher?.full_name || 'Unknown',
+      teacher_email: s.teacher?.email || '',
+      amount: `GH₵${s.amount.toFixed(2)}`,
+      platform_fee: s.amount > 0 ? `GH₵${(s.amount * 0.1).toFixed(2)}` : 'GH₵0.00',
+      total_amount: `GH₵${(s.amount * 1.1).toFixed(2)}`,
+      payment_status: (s as any).payment_status || 'pending',
+      payment_method: 'Not specified',
+      room_code: (s as any).room_code || 'N/A',
+      created_at: format(new Date((s as any).created_at || new Date()), 'yyyy-MM-dd HH:mm:ss'),
+      notes: '',
+    }));
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      setIsExporting(true);
+      
+      // Format sessions data locally without RPC call
+      const exportData = formatSessionsForExport();
+
+      if (exportData.length === 0) {
+        toast({ title: 'Info', description: 'No sessions to export' });
+        return;
+      }
+
+      await generateSessionsPDF(exportData, {
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        dateFrom,
+        dateTo,
+      });
+
+      toast({ title: 'Success', description: `Exported ${exportData.length} session(s) as PDF` });
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      toast({ title: 'Export Failed', description: errorMsg || 'Failed to export sessions to PDF', variant: 'destructive' });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      setIsExporting(true);
+
+      // Format sessions data locally without RPC call
+      const exportData = formatSessionsForExport();
+
+      if (exportData.length === 0) {
+        toast({ title: 'Info', description: 'No sessions to export' });
+        return;
+      }
+
+      await generateSessionsExcel(
+        exportData,
+        `sessions-export-${format(new Date(), 'yyyy-MM-dd-HHmmss')}.csv`
+      );
+
+      toast({ title: 'Success', description: `Exported ${exportData.length} session(s) as Excel` });
+    } catch (error) {
+      console.error('Error exporting Excel:', error);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      toast({ title: 'Export Failed', description: errorMsg || 'Failed to export sessions to Excel', variant: 'destructive' });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportWord = async () => {
+    try {
+      setIsExporting(true);
+
+      // Format sessions data locally without RPC call
+      const exportData = formatSessionsForExport();
+
+      if (exportData.length === 0) {
+        toast({ title: 'Info', description: 'No sessions to export' });
+        return;
+      }
+
+      await generateSessionsWord(exportData, {
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        dateFrom,
+        dateTo,
+      });
+
+      toast({ title: 'Success', description: `Exported ${exportData.length} session(s) as Word` });
+    } catch (error) {
+      console.error('Error exporting Word:', error);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      toast({ title: 'Export Failed', description: errorMsg || 'Failed to export sessions to Word', variant: 'destructive' });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return sessions.filter(s => {
@@ -187,8 +299,47 @@ export default function AdminSessions() {
               <CardTitle>Sessions</CardTitle>
               <p className="text-sm text-muted-foreground">Manage and moderate student session requests</p>
             </div>
+            <div className="flex flex-col gap-4">
+              {/* Export Buttons */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground">Export:</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={loading || filtered.length === 0 || isExporting}
+                  onClick={handleExportPDF}
+                  className="gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  PDF {isExporting && '...'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={loading || filtered.length === 0 || isExporting}
+                  onClick={handleExportExcel}
+                  className="gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Excel
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={loading || filtered.length === 0 || isExporting}
+                  onClick={handleExportWord}
+                  className="gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  Word
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+
+          {/* Filters */}
+          <div className="px-6 py-4 border-b space-y-4">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                   <Search className="w-4 h-4 text-muted-foreground" />
                   <Input className="w-full sm:w-80" placeholder="Search by subject, student or teacher" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }} />
@@ -211,7 +362,6 @@ export default function AdminSessions() {
                 <Input type="date" onChange={(e) => { setDateTo(e.target.value || null); setPage(1); }} />
               </div>
             </div>
-          </CardHeader>
           <CardContent>
             {loading ? (
               <div className="py-12 text-center">Loading sessions…</div>

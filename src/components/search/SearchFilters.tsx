@@ -19,10 +19,12 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ghanaRegions, subjects } from "@/data/teachers";
+import { useEducationLevels } from '@/hooks/useEducationLevels';
 
 export interface FilterState {
   subject: string;
   location: string;
+  educationLevel?: string;
   priceRange: [number, number];
   minRating: number;
   online: boolean;
@@ -47,8 +49,43 @@ export function SearchFilters({
     onFilterChange({ ...filters, [key]: value });
   };
 
+  // Inline component so it can access `filters` and `updateFilter`
+  const EducationLevelSelect = () => {
+    const { levels, loading } = useEducationLevels();
+
+    return (
+      <Select
+        value={filters.educationLevel || 'All Levels'}
+        onValueChange={(val) => updateFilter('educationLevel' as any, val)}
+      >
+        <SelectTrigger className="w-full bg-white border-border">
+          <SelectValue placeholder="All Levels" />
+        </SelectTrigger>
+        <SelectContent className="bg-white border-border z-50">
+          <SelectItem value={'All Levels'}>All Levels</SelectItem>
+          {loading ? (
+            <SelectItem value="loading">Loading...</SelectItem>
+          ) : (
+            levels.map((lvl) => (
+              <SelectItem key={lvl.id} value={lvl.name}>
+                {lvl.name}
+              </SelectItem>
+            ))
+          )}
+        </SelectContent>
+      </Select>
+    );
+  };
+
   const FilterContent = () => (
     <div className="space-y-6">
+      {/* Education Level */}
+      <div>
+        <Label className="text-sm font-medium mb-2 block">Education Level</Label>
+        <EducationLevelSelect />
+      </div>
+
+      
       {/* Subject */}
       <div>
         <Label className="text-sm font-medium mb-2 block">Subject</Label>

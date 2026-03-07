@@ -42,6 +42,7 @@ interface Student {
     email: string;
     avatar_url: string | null;
     region: string | null;
+    phone: string | null;
     status: string;
     status_reason: string | null;
   } | null;
@@ -191,63 +192,88 @@ export default function AdminStudents() {
 
   const fetchStudents = async () => {
     try {
-      // First validate data completeness
-      await validateStudentData();
+      // Call the RPC to get authenticated students with profile data and stats
+      const { data: rpcData, error: rpcError } = await supabase.rpc('get_admin_students', {
+        limit_count: 1000,  // Fetch up to 1000 students
+        offset_count: 0,
+        filter_status: null   // No status filter
+      });
+      
+      if (rpcError) {
+        console.error("RPC Error:", rpcError);
+        throw rpcError;
+      }
 
-      // Call the helper RPC to get authenticated students with profile data
-      const rpcClient = supabase as unknown as {
-        rpc: (fn: string, params?: unknown) => Promise<{ data: unknown; error: unknown }>
-      };
-
-      const { data: rpcData, error: rpcError } = await rpcClient.rpc('get_admin_students');
-      if (rpcError) throw rpcError;
+      if (!rpcData) {
+        console.warn("No data returned from RPC");
+        setStudents([]);
+        setLoading(false);
+        return;
+      }
 
       const rows = (rpcData as unknown) as Array<{
-        id: string;
+        user_id: string;
         email: string;
         full_name: string | null;
-        phone: string | null;
-        avatar_url: string | null;
-        region: string | null;
-        status: string | null;
-        role: string;
-        role_assigned_at: string | null;
-        user_created_at: string | null;
+        education_level: string | null;
+        is_suspended: boolean;
+        is_blocked: boolean;
+        suspension_reason: string | null;
+        block_reason: string | null;
+        suspension_date: string | null;
+        block_date: string | null;
+        created_at: string;
+        total_sessions: number;
+        total_spent: number;
+        last_active: string | null;
       }>;
 
-      const studentsWithData = await Promise.all(
-        rows.map(async (r) => {
-          // Fetch session stats - get all sessions for this student
-          const { data: sessions, error: sessionsError } = await supabase
-            .from("sessions")
-            .select("amount, status")
-            .eq("student_id", r.id);
+      // Fetch additional profile data (avatar, region, phone) for all students
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, avatar_url, region, phone')
+        .in('user_id', rows.map(r => r.user_id));
 
-          if (sessionsError) {
-            console.warn(`Session fetch error for user ${r.id}:`, sessionsError);
-          }
+      if (profilesError) {
+        console.warn("Profile fetch error:", profilesError);
+      }
 
-          const sessionCount = (sessions as any[])?.length || 0;
-          const totalSpent = (sessions as any[])
-            ?.filter(s => s.status === "completed")
-            .reduce((sum, s) => sum + Number(s.amount || 0), 0) || 0;
-
-          return {
-            user_id: r.id,
-            created_at: r.role_assigned_at || r.user_created_at || new Date().toISOString(),
-            profile: {
-              full_name: r.full_name || "Profile Not Complete",
-              email: r.email || "Not provided",
-              avatar_url: r.avatar_url || null,
-              region: r.region || null,
-              status: r.status || "pending",
-              status_reason: null
-            },
-            sessionCount,
-            totalSpent
-          };
-        })
+      // Create a map of user_id to profile data
+      const profilesMap = new Map(
+        (profilesData || []).map(p => [p.user_id, p])
       );
+
+      const studentsWithData = rows.map((r) => {
+        const profileData = profilesMap.get(r.user_id);
+        
+        // Determine status based on suspension/block flags
+        let status = 'active';
+        let status_reason = null;
+        
+        if (r.is_blocked) {
+          status = 'blocked';
+          status_reason = r.block_reason;
+        } else if (r.is_suspended) {
+          status = 'suspended';
+          status_reason = r.suspension_reason;
+        }
+
+        return {
+          user_id: r.user_id,
+          created_at: r.created_at,
+          profile: {
+            full_name: r.full_name || "Profile Not Complete",
+            email: r.email || "Not provided",
+            avatar_url: profileData?.avatar_url || null,
+            region: profileData?.region || null,
+            phone: profileData?.phone || null,
+            status: status,
+            status_reason: status_reason
+          },
+          sessionCount: r.total_sessions || 0,
+          totalSpent: r.total_spent || 0
+        };
+      });
 
       setStudents(studentsWithData);
 

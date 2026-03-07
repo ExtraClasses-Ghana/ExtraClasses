@@ -65,17 +65,21 @@ export default function Contact() {
     }
   };
 
+  const PHONE_NUMBER = "0596352632";
+  const PHONE_NUMBER_INTERNATIONAL = "+233596352632";
+  const SUPPORT_EMAIL = "extraclassesghana@gmail.com";
+
   const contactInfo = [
     {
       icon: Mail,
       title: "Email Us",
-      details: "extraclassesghana@gmail.com",
+      details: SUPPORT_EMAIL,
       description: "We'll respond within 24 hours"
     },
     {
       icon: Phone,
       title: "Call Us",
-      details: "0596352632",
+      details: PHONE_NUMBER,
       description: "Mon-Fri, 8am-6pm GMT"
     },
     {
@@ -91,6 +95,24 @@ export default function Contact() {
       description: "Monday to Friday"
     }
   ];
+
+  const handleCallClick = () => {
+    try {
+      window.location.href = `tel:${PHONE_NUMBER_INTERNATIONAL}`;
+    } catch (error) {
+      console.error('Error initiating call:', error);
+      toast.error("Unable to initiate call. Please try calling directly.");
+    }
+  };
+
+  const handleEmailClick = () => {
+    try {
+      window.location.href = `mailto:${SUPPORT_EMAIL}`;
+    } catch (error) {
+      console.error('Error initiating email:', error);
+      toast.error("Unable to open email client. Please email us directly.");
+    }
+  };
 
   const faqs = [
     {
@@ -143,13 +165,20 @@ export default function Contact() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                 >
-                  <Card className="h-full text-center hover:shadow-lg transition-shadow">
+                  <Card 
+                    className={`h-full text-center hover:shadow-lg transition-shadow ${
+                      (info.title === "Call Us" || info.title === "Email Us") ? "cursor-pointer hover:border-primary" : ""
+                    }`}
+                    onClick={info.title === "Call Us" ? handleCallClick : (info.title === "Email Us" ? handleEmailClick : undefined)}
+                  >
                     <CardContent className="pt-6">
                       <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
                         <info.icon className="w-6 h-6 text-primary" />
                       </div>
                       <h3 className="font-semibold text-foreground mb-1">{info.title}</h3>
-                      <p className="text-primary font-medium">{info.details}</p>
+                      <p className={`font-medium ${(info.title === "Call Us" || info.title === "Email Us") ? "text-primary hover:underline" : "text-primary"}`}>
+                        {info.details}
+                      </p>
                       <p className="text-sm text-muted-foreground mt-1">{info.description}</p>
                     </CardContent>
                   </Card>
@@ -292,9 +321,14 @@ export default function Contact() {
                     <p className="text-sm text-primary-foreground/80 mb-4">
                       Our support team is available Monday to Friday, 8am-6pm GMT.
                     </p>
-                    <Button variant="secondary" className="w-full sm:w-auto">
+                    <Button 
+                      variant="secondary" 
+                      className="w-full sm:w-auto"
+                      onClick={handleCallClick}
+                      title={`Call us at ${PHONE_NUMBER}`}
+                    >
                       <Phone className="w-4 h-4 mr-2" />
-                      Call 0596352632
+                      Call {PHONE_NUMBER}
                     </Button>
                   </CardContent>
                 </Card>

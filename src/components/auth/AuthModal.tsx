@@ -342,18 +342,24 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                   minLength={6}
                 />
               </div>
+              {tab === 'login' && (
+                <div className="text-right text-sm mt-1">
+                  <a
+                    href="/auth/reset-password"
+                    className="text-blue-600 hover:text-blue-700"
+                  >
+                    Forgot password?
+                  </a>
+                </div>
+              )}
             </div>
 
             <Button
               type="submit"
-              className="w-full btn-coral"
+              className="w-full mt-6 bg-gradient-to-r from-primary to-accent hover:shadow-lg"
               disabled={isLoading}
             >
-              {isLoading
-                ? "Please wait..."
-                : tab === "login"
-                ? "Sign In"
-                : "Create Account"}
+              {isLoading ? "Processing..." : tab === "login" ? "Sign In" : "Create Account"}
             </Button>
 
             {tab === "login" && (

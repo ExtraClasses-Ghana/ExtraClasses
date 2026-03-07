@@ -3,6 +3,7 @@ export interface Teacher {
   name: string;
   subject: string;
   subjects: string[];
+  educationLevels?: string[];
   location: string;
   rating: number;
   reviews: number;

@@ -33,6 +33,7 @@ import TeacherWithdrawals from "./pages/dashboard/TeacherWithdrawals";
 
 // Admin Dashboard Pages
 import AdminLogin from "./pages/admin/AdminLogin";
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminVerification from "./pages/admin/AdminVerification";
 import AdminTeachers from "./pages/admin/AdminTeachers";
@@ -41,12 +42,12 @@ import AdminSubjects from "./pages/admin/AdminSubjects";
 import AdminCourseMaterials from "./pages/admin/AdminCourseMaterials";
 import AdminComplaints from "./pages/admin/AdminComplaints";
 import AdminPayments from "./pages/admin/AdminPayments";
-import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminRequests from "./pages/admin/AdminRequests";
 import AdminTWR from "./pages/admin/AdminTWR";
 import AdminSessions from "./pages/admin/AdminSessions";
+import AdminEducationLevels from "./pages/admin/AdminEducationLevels";
 
 // UI Components (after pages to avoid circular deps)
 import { Toaster } from "@/components/ui/toaster";
@@ -79,6 +80,7 @@ const App = () => (
 
             {/* Admin Login (Public) */}
             <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
 
             {/* Student Dashboard Routes */}
             <Route
@@ -270,18 +272,18 @@ const App = () => (
               }
             />
             <Route
-              path="/admin/payments"
+              path="/admin/education-levels"
               element={
                 <ProtectedRoute allowedRoles={["admin"]}>
-                  <AdminPayments />
+                  <AdminEducationLevels />
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/admin/analytics"
+              path="/admin/payments"
               element={
                 <ProtectedRoute allowedRoles={["admin"]}>
-                  <AdminAnalytics />
+                  <AdminPayments />
                 </ProtectedRoute>
               }
             />

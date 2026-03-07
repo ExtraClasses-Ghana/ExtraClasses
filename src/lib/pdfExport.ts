@@ -94,18 +94,23 @@ export async function generatePDFFromHTML(
 }
 
 export function createPDFHeader(logo: string): string {
+  // the header is designed to be centered, with a clear border and generous top/bottom margins
+  // the logo is included to reinforce branding and make the document look official
   return `
-    <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #1e40af; padding-bottom: 20px;">
-      <img src="${logo}" alt="ExtraClasses Ghana" style="height: 50px; margin-bottom: 15px;" />
-      <h1 style="color: #1e40af; font-size: 28px; margin: 10px 0 5px 0;">ExtraClasses Ghana</h1>
-      <p style="color: #6b7280; font-size: 12px; margin: 0;">Professional Online & In-Person Tutoring Platform</p>
+    <div style="display: flex; align-items: center; justify-content: center; margin: 0 40px 30px 40px; padding-bottom: 20px; border-bottom: 2px solid #1e40af;">
+      <img src="${logo}" alt="ExtraClasses Ghana" style="height: 60px; margin-right: 20px;" />
+      <div style="text-align: left;">
+        <h1 style="color: #1e40af; font-size: 28px; margin: 0;">ExtraClasses Ghana</h1>
+        <p style="color: #6b7280; font-size: 12px; margin: 4px 0 0 0;">Professional Online & In-Person Tutoring Platform</p>
+      </div>
     </div>
   `;
 }
 
 export function createPDFFooter(generatedDate: string): string {
+  // footer with light border, spaced well from content and centered text
   return `
-    <div style="border-top: 1px solid #e5e7eb; padding-top: 15px; margin-top: 30px; text-align: center; font-size: 11px; color: #6b7280;">
+    <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin: 40px 40px 20px 40px; text-align: center; font-size: 11px; color: #6b7280;">
       <p style="margin: 5px 0;">Generated on ${generatedDate}</p>
       <p style="margin: 5px 0;">© 2026 ExtraClasses Ghana. All rights reserved.</p>
       <p style="margin: 5px 0; font-style: italic;">This is an official document from ExtraClasses Ghana</p>

@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 const defaultFilters: FilterState = {
   subject: "All Subjects",
   location: "All Regions",
+  educationLevel: 'All Levels',
   priceRange: [0, 200],
   minRating: 0,
   online: false,
@@ -102,6 +103,7 @@ export default function TeacherSearch() {
             name: profile?.full_name || "Teacher",
             subject: tp.subjects?.[0] || "General",
             subjects: tp.subjects || [],
+            educationLevels: [],
             location: region,
             rating: Number(tp.rating) || 0,
             reviews: tp.total_reviews || 0,
@@ -121,8 +123,52 @@ export default function TeacherSearch() {
         })
       );
 
+      // Enrich teachers with their education levels (batch queries to avoid selecting nested columns)
+      const validTeachers = (teachersWithProfiles.filter(Boolean) as any[]);
+      const teacherIds = validTeachers.map((t) => t.id);
+
+      if (teacherIds.length > 0) {
+        // fetch mappings from teacher_education_levels
+        const { data: mappingRows, error: mappingError } = await supabase
+          .from('teacher_education_levels')
+          .select('teacher_user_id, education_level_id')
+          .in('teacher_user_id', teacherIds as any[]);
+
+        if (mappingError) {
+          console.error('Error fetching teacher_education_levels mapping:', mappingError);
+        }
+
+        const levelIds = Array.from(new Set((mappingRows || []).map((r: any) => r.education_level_id)));
+
+        let levelMap: Record<string, string> = {};
+        if (levelIds.length > 0) {
+          const { data: levelsData, error: levelsError } = await supabase
+            .from('education_levels')
+            .select('id, name')
+            .in('id', levelIds as any[]);
+
+          if (levelsError) {
+            console.error('Error fetching education_levels names:', levelsError);
+          } else {
+            (levelsData || []).forEach((lv: any) => { levelMap[lv.id] = lv.name; });
+          }
+        }
+
+        const teachersWithLevels = validTeachers.map((t) => {
+          const assigned = (mappingRows || []).filter((r: any) => r.teacher_user_id === t.id).map((r: any) => r.education_level_id as string);
+          t.educationLevels = assigned.map((id: string) => levelMap[id] || id);
+          return t;
+        });
+
+        // set enriched teachers
+        setTeachers(teachersWithLevels.filter(Boolean) as Teacher[]);
+      } else {
+        setTeachers(validTeachers as Teacher[]);
+      }
+
       // Filter out null values (blocked/suspended)
-      setTeachers(teachersWithProfiles.filter(Boolean) as Teacher[]);
+      setTeachers(teachersWithLevels.filter(Boolean) as Teacher[]);
+    
     } catch (error) {
       console.error("Error fetching teachers:", error);
     } finally {
@@ -153,6 +199,11 @@ export default function TeacherSearch() {
           t.subject === filters.subject ||
           t.subjects.includes(filters.subject)
       );
+    }
+
+    // Education level filter
+    if (filters.educationLevel && filters.educationLevel !== 'All Levels') {
+      result = result.filter((t) => (t.educationLevels || []).includes(filters.educationLevel as string));
     }
 
     // Location filter

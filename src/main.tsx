@@ -38,24 +38,19 @@ window.addEventListener("unhandledrejection", (ev) => {
   }
 });
 
+// Import `App` directly; if there is a compilation or evaluation
+// error it will already be surfaced in the console and Vite overlay instead
+// of triggering the network error we were seeing during the dynamic import.
+import App from "./App";
+
 try {
-  // Dynamically import `App` so any module-evaluation errors are caught
-  // and displayed via `renderFatalError` instead of a white screen.
-  import("./App")
-    .then(({ default: App }) => {
-      createRoot(document.getElementById("root")!).render(
-        <Router>
-          <App />
-        </Router>
-      );
-    })
-    .catch((err) => {
-      const message = (err && (err.stack || err.message)) || String(err);
-      renderFatalError(message);
-      // Also log to console for easier inspection
-      console.error(err);
-    });
+  createRoot(document.getElementById("root")!).render(
+    <Router>
+      <App />
+    </Router>
+  );
 } catch (err) {
+  // fallback to the same fatal renderer used above.
   renderFatalError(String(err));
 }
 

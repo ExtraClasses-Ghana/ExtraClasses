@@ -24,6 +24,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import paystack from "@/integrations/paystack/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface BookingModalProps {
@@ -279,9 +280,9 @@ export function BookingModal({
   }, []);
 
   // Initialize country code on mount
-  useState(() => {
+  useEffect(() => {
     setCountryCode(detectedCountryCode);
-  });
+  }, [detectedCountryCode]);
 
   // Calculate pricing
   const basePrice = teacher.hourlyRate * (parseInt(duration) / 60);
@@ -308,19 +309,28 @@ export function BookingModal({
   };
 
   const handleSubmit = async () => {
-    if (!user || !selectedDate || !selectedTime) {
+    if (!user) {
       toast({
         title: "Error",
-        description: "Please complete all required fields",
+        description: "You must be logged in to book a session",
         variant: "destructive",
       });
       return;
     }
-
+    
+    if (!selectedDate || !selectedTime) {
+      toast({
+        title: "Error",
+        description: "Please select a date and time",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
       const sessionDate = format(selectedDate, "yyyy-MM-dd");
-      
+
       // Convert 12-hour time to 24-hour format for database
       const timeParts = selectedTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
       let startTime = selectedTime;
@@ -332,7 +342,79 @@ export function BookingModal({
         startTime = `${hour.toString().padStart(2, "0")}:00`;
       }
 
-      // Create session in database
+      // Prepare payment
+      const payerEmail = studentEmail || profile?.email || (user as any)?.email || "";
+      const amountGhs = totalPrice + platformFee;
+      const amountPesewas = Math.round(amountGhs * 100);
+      const reference = `ec_${user.id}_${Date.now()}`;
+
+      // Initialize Paystack transaction via Supabase function
+      let init;
+      try {
+        init = await paystack.initializeTransaction({
+          email: payerEmail,
+          amount: amountPesewas,
+          reference,
+          callback_url: window.location.origin + "/payments/callback",
+          metadata: {
+            teacher_id: teacher.id,
+            student_id: user.id,
+            subject,
+            session_date: sessionDate,
+            start_time: startTime,
+            duration: parseInt(duration),
+          },
+        });
+      } catch (initError) {
+        console.error("Error initializing Paystack transaction:", initError);
+        throw new Error(
+          `Failed to initialize payment: ${initError instanceof Error ? initError.message : "Unknown error"}`
+        );
+      }
+
+      if (!init || !init.status) {
+        throw new Error(
+          init?.message || "Failed to initialize payment with Paystack"
+        );
+      }
+
+      const authorizationUrl = init?.data?.authorization_url;
+
+      // Open Paystack inline and wait for user to complete
+      let inlineRes: any;
+      try {
+        inlineRes = await paystack.openPaystackInline({
+          email: payerEmail,
+          amount: amountPesewas,
+          reference,
+          authorization_url: authorizationUrl,
+        });
+      } catch (e) {
+        const errorMsg = e instanceof Error ? e.message : "Payment was not completed";
+        console.error("Paystack inline error:", e);
+        throw new Error(errorMsg);
+      }
+
+      // Verify transaction using paystack helper (has fallback)
+      let verifyRes;
+      try {
+        verifyRes = await paystack.verifyTransaction(inlineRes.reference || reference);
+      } catch (verifyError) {
+        console.error("Error verifying transaction:", verifyError);
+        throw new Error(
+          `Failed to verify payment: ${verifyError instanceof Error ? verifyError.message : "Unknown error"}`
+        );
+      }
+
+      const payData = verifyRes?.data ?? verifyRes;
+      if (!verifyRes || !payData || payData.status !== "success") {
+        console.error("Payment verification failed:", { verifyRes, payData });
+        throw new Error(
+          payData?.message || "Payment verification failed. Please contact support."
+        );
+      }
+
+      // Payment successful — create session and payment record
       const { data: sessionData, error: sessionError } = await supabase
         .from("sessions")
         .insert({
@@ -343,8 +425,8 @@ export function BookingModal({
           start_time: startTime,
           duration_minutes: parseInt(duration),
           session_type: lessonType,
-          status: "pending",
-          amount: totalPrice + platformFee,
+          status: "confirmed",
+          amount: amountGhs,
           notes: notes || null,
           platform_fee: platformFee,
         })
@@ -353,17 +435,27 @@ export function BookingModal({
 
       if (sessionError) throw sessionError;
 
+      // Insert payment record
+      await supabase.from("payments").insert({
+        session_id: sessionData.id,
+        payer_id: user.id,
+        amount: amountGhs,
+        status: "paid",
+        payment_method: payData.channel || payData.authorization?.channel || null,
+        transaction_ref: payData.reference || reference,
+      });
+
       // Create admin notification for new booking
       await supabase.from("admin_notifications").insert({
         type: "new_booking",
         title: "New Session Booking",
-        message: `${profile?.full_name || studentName} booked a ${subject} session with teacher (ID: ${teacher.id}) for ${format(selectedDate, "MMM d, yyyy")} at ${selectedTime}. Amount: GH₵${(totalPrice + platformFee).toFixed(2)}`,
+        message: `${profile?.full_name || studentName} booked a ${subject} session with teacher (ID: ${teacher.id}) for ${format(selectedDate, "MMM d, yyyy")} at ${selectedTime}. Amount: GH₵${amountGhs.toFixed(2)}`,
         related_user_id: user.id,
       });
 
       toast({
         title: "Booking Successful",
-        description: "Your session has been booked. You'll receive a confirmation soon.",
+        description: "Your payment was successful and the session is booked.",
       });
 
       setStep(4);
