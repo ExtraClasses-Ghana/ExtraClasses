@@ -211,7 +211,7 @@ export function Navbar() {
                       onClick={handleSignOut}
                       className="text-destructive cursor-pointer"
                     >
-                      <LogOut className="w-4 h-4 mr-2" />
+                      <img src="/signin-icon.png" alt="Sign out" className="w-4 h-4 mr-2" />
                       Sign Out
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -329,7 +329,7 @@ export function Navbar() {
                           setIsOpen(false);
                         }}
                       >
-                        <LogOut className="w-4 h-4 mr-2" />
+                        <img src="/signin-icon.png" alt="Sign out" className="w-4 h-4 mr-2" />
                         Sign Out
                       </Button>
                     </>

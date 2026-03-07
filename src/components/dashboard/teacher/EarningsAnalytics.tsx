@@ -219,8 +219,8 @@ export function EarningsAnalytics() {
             Track your teaching income and payouts
           </p>
         </div>
-        <Button variant="outline" onClick={handleExportPDF} disabled={isExporting}>
-          <Download className="w-4 h-4 mr-2" />
+        <Button variant="outline" onClick={handleExportPDF} disabled={isExporting} className="gap-2 hover:scale-105 transition-all duration-200 hover:shadow-md p-2">
+          <img src="/pdf-icon.png" alt="PDF" className="w-[50px] h-[50px]" />
           {isExporting ? "Exporting..." : "Export Report"}
         </Button>
       </div>

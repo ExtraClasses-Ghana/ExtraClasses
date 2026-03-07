@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useAdminStudents, useStudentActions, AdminStudent } from "@/hooks/useStudentActions";
+import { toast } from "sonner";
 import {
   MessageSquare,
   Ban,
@@ -155,6 +156,49 @@ export default function AdminStudentsManagement() {
     }
   };
 
+  const handleExportPDF = async () => {
+    try {
+      // Simple CSV export for now
+      const csvData = students.map(student => ({
+        Name: student.full_name,
+        Email: student.email,
+        EducationLevel: student.education_level || '',
+        Status: student.status,
+        TotalSessions: student.total_sessions,
+        TotalSpent: student.total_spent,
+        LastActive: student.last_active ? new Date(student.last_active).toLocaleDateString() : 'Never'
+      }));
+      
+      const csv = [
+        Object.keys(csvData[0]).join(','),
+        ...csvData.map(row => Object.values(row).join(','))
+      ].join('\n');
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `students-export-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      
+      toast({ title: 'Success', description: 'Students exported as CSV' });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({ title: 'Export Failed', description: 'Failed to export students', variant: 'destructive' });
+    }
+  };
+
+  const handleExportExcel = async () => {
+    // For now, same as PDF
+    await handleExportPDF();
+  };
+
+  const handleExportWord = async () => {
+    // For now, same as PDF
+    await handleExportPDF();
+  };
+
   return (
     <AdminDashboardLayout title="Student Management" subtitle="Manage student accounts and actions">
       {/* Errors */}
@@ -205,7 +249,44 @@ export default function AdminStudentsManagement() {
       {/* Students Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Students</CardTitle>
+          <div className="flex flex-col gap-4">
+            <div>
+              <CardTitle className="text-lg">Students</CardTitle>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-medium text-muted-foreground">Export:</span>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={loading || students.length === 0}
+                onClick={() => handleExportPDF()}
+                className="gap-2 hover:scale-105 transition-all duration-200 hover:shadow-md p-2"
+              >
+                <img src="/pdf-icon.png" alt="PDF" className="w-[50px] h-[50px]" />
+                PDF
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={loading || students.length === 0}
+                onClick={() => handleExportExcel()}
+                className="gap-2 hover:scale-105 transition-all duration-200 hover:shadow-md p-2"
+              >
+                <img src="/excel-icon.png" alt="Excel" className="w-[50px] h-[50px]" />
+                Excel
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={loading || students.length === 0}
+                onClick={() => handleExportWord()}
+                className="gap-2 hover:scale-105 transition-all duration-200 hover:shadow-md p-2"
+              >
+                <img src="/word-icon.png" alt="Word" className="w-[50px] h-[50px]" />
+                Word
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (

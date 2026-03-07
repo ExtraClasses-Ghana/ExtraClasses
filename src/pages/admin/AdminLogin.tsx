@@ -67,7 +67,7 @@ export default function AdminLogin() {
             {/* Logo */}
             <div className="flex justify-center mb-4">
               <img 
-                src={logo} 
+                src="/logo-animate.gif" 
                 alt="ExtraClasses Ghana" 
                 className="w-28 h-28 object-contain"
               />
@@ -101,7 +101,7 @@ export default function AdminLogin() {
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <img src="/password-icon.png" alt="Password" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     id="password"
                     type="password"

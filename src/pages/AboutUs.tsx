@@ -2,39 +2,46 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { motion } from "framer-motion";
 import { 
-  GraduationCap, 
-  Users, 
-  Award, 
-  Heart, 
-  Target, 
+  Target,
   Lightbulb,
-  MapPin,
-  Mail,
-  Phone
+  Users,
+  GraduationCap
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+
+const mapIcon = new URL('../../icons/Map icon.png', import.meta.url).href;
+const emailIcon = new URL('../../icons/Email.png', import.meta.url).href;
+const phoneIcon = new URL('../../icons/Phone icon.png', import.meta.url).href;
+const graduationHat = new URL('../../icons/Graduation hat.png', import.meta.url).href;
+const communityIcon = new URL('../../icons/Community icon.png', import.meta.url).href;
+const medalIcon = new URL('../../icons/Medal icon.png', import.meta.url).href;
+const heartIcon = new URL('../../icons/Heart icon.png', import.meta.url).href;
 
 export default function AboutUs() {
   const values = [
     {
-      icon: GraduationCap,
+      icon: graduationHat,
       title: "Quality Education",
-      description: "We connect students with qualified, verified teachers who are passionate about teaching."
+      description: "We connect students with qualified, verified teachers who are passionate about teaching.",
+      isImage: true
     },
     {
-      icon: Users,
+      icon: communityIcon,
       title: "Community First",
-      description: "Building a supportive learning community across all regions of Ghana."
+      description: "Building a supportive learning community across all regions of Ghana.",
+      isImage: true
     },
     {
-      icon: Award,
+      icon: medalIcon,
       title: "Excellence",
-      description: "We strive for excellence in every tutoring session and student outcome."
+      description: "We strive for excellence in every tutoring session and student outcome.",
+      isImage: true
     },
     {
-      icon: Heart,
+      icon: heartIcon,
       title: "Accessibility",
-      description: "Making quality education accessible to every student, regardless of location."
+      description: "Making quality education accessible to every student, regardless of location.",
+      isImage: true
     }
   ];
 
@@ -167,8 +174,8 @@ export default function AboutUs() {
                 >
                   <Card className="h-full text-center hover:shadow-lg transition-shadow">
                     <CardContent className="pt-6">
-                      <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                        <value.icon className="w-7 h-7 text-primary" />
+                      <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                        <img src={value.icon} alt={value.title} className="w-10 h-10 object-contain" />
                       </div>
                       <h3 className="font-semibold text-foreground mb-2">{value.title}</h3>
                       <p className="text-sm text-muted-foreground">{value.description}</p>
@@ -181,7 +188,7 @@ export default function AboutUs() {
         </section>
 
         {/* Contact Info */}
-        <section className="py-16">
+        <section className="py-16 lg:py-24">
           <div className="container mx-auto px-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -198,27 +205,50 @@ export default function AboutUs() {
             </motion.div>
 
             <div className="grid sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
-              <Card className="text-center">
-                <CardContent className="pt-6">
-                  <MapPin className="w-8 h-8 text-primary mx-auto mb-3" />
-                  <h3 className="font-semibold mb-1">Address</h3>
-                  <p className="text-sm text-muted-foreground">Accra, Ghana</p>
-                </CardContent>
-              </Card>
-              <Card className="text-center">
-                <CardContent className="pt-6">
-                  <Mail className="w-8 h-8 text-primary mx-auto mb-3" />
-                  <h3 className="font-semibold mb-1">Email</h3>
-                  <p className="text-sm text-muted-foreground">extraclassesghana@gmail.com</p>
-                </CardContent>
-              </Card>
-              <Card className="text-center">
-                <CardContent className="pt-6">
-                  <Phone className="w-8 h-8 text-primary mx-auto mb-3" />
-                  <h3 className="font-semibold mb-1">Phone</h3>
-                  <p className="text-sm text-muted-foreground">0596352632</p>
-                </CardContent>
-              </Card>
+              {[
+                {
+                  icon: mapIcon,
+                  title: "Address",
+                  details: "Accra, Ghana",
+                  color: "from-blue-500/20 to-blue-600/20"
+                },
+                {
+                  icon: emailIcon,
+                  title: "Email",
+                  details: "extraclassesghana@gmail.com",
+                  color: "from-green-500/20 to-green-600/20"
+                },
+                {
+                  icon: phoneIcon,
+                  title: "Phone",
+                  details: "0596352632",
+                  color: "from-purple-500/20 to-purple-600/20"
+                }
+              ].map((item, index) => (
+                <motion.div
+                  key={item.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-50px" }}
+                  transition={{ delay: index * 0.15, duration: 0.5 }}
+                  whileHover={{ y: -8, transition: { duration: 0.3 } }}
+                >
+                  <Card className="text-center h-full border-0 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group">
+                    <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                    <CardContent className="pt-6 relative z-10">
+                      <motion.div
+                        className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition-colors duration-300"
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        transition={{ type: "spring", stiffness: 300 }}
+                      >
+                        <img src={item.icon} alt={item.title} className="w-7 h-7 object-contain" />
+                      </motion.div>
+                      <h3 className="font-semibold mb-2 text-foreground">{item.title}</h3>
+                      <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors duration-300">{item.details}</p>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
             </div>
           </div>
         </section>

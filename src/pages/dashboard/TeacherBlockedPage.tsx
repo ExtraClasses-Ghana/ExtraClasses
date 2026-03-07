@@ -37,7 +37,7 @@ export function TeacherBlockedPage() {
             If you believe this is an error, please contact support.
           </p>
           <Button variant="outline" className="w-full" onClick={handleSignOut}>
-            <LogOut className="w-4 h-4 mr-2" />
+            <img src="/signin-icon.png" alt="Sign out" className="w-4 h-4 mr-2" />
             Sign out
           </Button>
         </CardContent>

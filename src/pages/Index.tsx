@@ -6,6 +6,7 @@ import { HowItWorks } from "@/components/home/HowItWorks";
 import { SubjectCategories } from "@/components/home/SubjectCategories";
 import { Testimonials } from "@/components/home/Testimonials";
 import { CTASection } from "@/components/home/CTASection";
+import FloatingChat from "@/components/home/FloatingChat";
 
 const Index = () => {
   return (
@@ -18,6 +19,7 @@ const Index = () => {
       <Testimonials />
       <CTASection />
       <Footer />
+      <FloatingChat />
     </div>
   );
 };

@@ -169,7 +169,7 @@ export function StudentDashboardLayout({ children }: DashboardLayoutProps) {
             }`}
             onClick={handleSignOut}
           >
-            <LogOut className="w-5 h-5" />
+            <img src="/signin-icon.png" alt="Sign out" className="w-5 h-5" />
             {isSidebarOpen && "Sign Out"}
           </Button>
         </div>

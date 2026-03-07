@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Star, MapPin, Clock, ChevronRight, BadgeCheck, Video, Home, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Star, MapPin, Clock, ChevronRight, BadgeCheck, Video, Home, Loader2, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -54,6 +54,7 @@ export function FeaturedTeachers() {
   const [selectedRegion, setSelectedRegion] = useState("All Regions");
   const [teachers, setTeachers] = useState<TeacherWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
     fetchTeachers();
@@ -145,6 +146,19 @@ export function FeaturedTeachers() {
     ? teachers.slice(0, 4)
     : teachers.filter(t => t.profile?.region === selectedRegion).slice(0, 4);
 
+  // Carousel functions
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % Math.ceil(filteredTeachers.length / 2));
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + Math.ceil(filteredTeachers.length / 2)) % Math.ceil(filteredTeachers.length / 2));
+  };
+
+  const goToSlide = (index: number) => {
+    setCurrentSlide(index);
+  };
+
   return (
     <section className="py-24 bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -211,18 +225,185 @@ export function FeaturedTeachers() {
           </motion.div>
         )}
 
-        {/* Teachers Grid */}
+        {/* Teachers Display - Carousel on Mobile, Grid on Desktop */}
         {!loading && filteredTeachers.length > 0 && (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {filteredTeachers.map((teacher, index) => (
-              <Link to={`/teacher/${teacher.user_id}`} key={teacher.id}>
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="teacher-card group cursor-pointer"
-                >
+          <>
+            {/* Mobile Carousel */}
+            <div className="block md:hidden relative">
+              <div className="overflow-hidden">
+                <AnimatePresence>
+                  <motion.div
+                    key={currentSlide}
+                    initial={{ opacity: 0, x: 100 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -100 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex gap-4"
+                  >
+                    {filteredTeachers
+                      .slice(currentSlide * 2, (currentSlide * 2) + 2)
+                      .map((teacher, index) => (
+                        <Link
+                          to={`/teacher/${teacher.user_id}`}
+                          key={teacher.id}
+                          className="flex-1 min-w-0"
+                        >
+                          <motion.div
+                            initial={{ opacity: 0, y: 30 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.5, delay: index * 0.1 }}
+                            className="teacher-card group cursor-pointer h-full"
+                          >
+                            {/* Image & Badge */}
+                            <div className="relative mb-4">
+                              <div className="aspect-square rounded-2xl overflow-hidden bg-muted">
+                                {teacher.profile?.avatar_url ? (
+                                  <img
+                                    src={teacher.profile.avatar_url}
+                                    alt={teacher.profile.full_name}
+                                    className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center bg-primary/10">
+                                    <span className="text-4xl font-bold text-primary">
+                                      {teacher.profile?.full_name?.charAt(0) || "T"}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              {teacher.is_verified && (
+                                <div className="absolute top-3 right-3 bg-accent text-white px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 shadow-md">
+                                  <BadgeCheck className="w-3.5 h-3.5" />
+                                  Verified
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Teacher Info */}
+                            <div className="space-y-3">
+                              <div>
+                                <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors">
+                                  {teacher.profile?.full_name || "Teacher"}
+                                </h3>
+                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                  <MapPin className="w-3.5 h-3.5" />
+                                  {teacher.profile?.region || "Location not specified"}
+                                </div>
+                              </div>
+
+                              {/* Rating */}
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1">
+                                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                                  <span className="text-sm font-medium">{teacher.rating?.toFixed(1) || "0.0"}</span>
+                                </div>
+                                <span className="text-xs text-muted-foreground">
+                                  ({teacher.total_reviews || 0} reviews)
+                                </span>
+                              </div>
+
+                              {/* Subjects */}
+                              <div className="flex flex-wrap gap-1">
+                                {teacher.subjects?.slice(0, 2).map((subject, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full"
+                                  >
+                                    {subject}
+                                  </span>
+                                ))}
+                                {teacher.subjects && teacher.subjects.length > 2 && (
+                                  <span className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded-full">
+                                    +{teacher.subjects.length - 2}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Teaching Mode & Price */}
+                              <div className="flex items-center justify-between">
+                                <div className="flex gap-2">
+                                  {(teacher.teaching_mode === "online" || teacher.teaching_mode === "both") && (
+                                    <div className="w-7 h-7 rounded-full bg-blue-500/10 flex items-center justify-center" title="Online lessons">
+                                      <Video className="w-3.5 h-3.5 text-blue-500" />
+                                    </div>
+                                  )}
+                                  {(teacher.teaching_mode === "in_person" || teacher.teaching_mode === "both") && (
+                                    <div className="w-7 h-7 rounded-full bg-gold/10 flex items-center justify-center" title="In-person lessons">
+                                      <Home className="w-3.5 h-3.5 text-gold" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-lg font-bold text-secondary">
+                                    GH₵{teacher.hourly_rate || 0}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">/hour</p>
+                                </div>
+                              </div>
+
+                              {/* Book Session Button */}
+                              <Button className="w-full btn-coral text-sm">
+                                Book Session
+                              </Button>
+                            </div>
+                          </motion.div>
+                        </Link>
+                      ))}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              {/* Carousel Navigation */}
+              {Math.ceil(filteredTeachers.length / 2) > 1 && (
+                <>
+                  {/* Navigation Buttons */}
+                  <button
+                    onClick={prevSlide}
+                    aria-label="Previous teachers"
+                    title="Previous teachers"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors z-10"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-gray-600" />
+                  </button>
+                  <button
+                    onClick={nextSlide}
+                    aria-label="Next teachers"
+                    title="Next teachers"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors z-10"
+                  >
+                    <ChevronRightIcon className="w-5 h-5 text-gray-600" />
+                  </button>
+
+                  {/* Dots Indicator */}
+                  <div className="flex justify-center gap-2 mt-6">
+                    {Array.from({ length: Math.ceil(filteredTeachers.length / 2) }, (_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => goToSlide(i)}
+                        aria-label={`Go to slide ${i + 1}`}
+                        title={`Go to slide ${i + 1}`}
+                        className={`w-2 h-2 rounded-full transition-colors ${
+                          i === currentSlide ? 'bg-primary' : 'bg-gray-300'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Desktop Grid */}
+            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {filteredTeachers.map((teacher, index) => (
+                <Link to={`/teacher/${teacher.user_id}`} key={teacher.id}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    className="teacher-card group cursor-pointer"
+                  >
                   {/* Image & Badge */}
                   <div className="relative mb-4">
                     <div className="aspect-square rounded-2xl overflow-hidden bg-muted">
@@ -323,6 +504,7 @@ export function FeaturedTeachers() {
               </Link>
             ))}
           </div>
+        </>
         )}
 
         {!loading && filteredTeachers.length === 0 && teachers.length > 0 && (

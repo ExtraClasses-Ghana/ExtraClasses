@@ -820,7 +820,7 @@ export default function TeacherSettings() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Lock className="w-5 h-5" />
+              <img src="/password-icon.png" alt="Password" className="w-5 h-5" />
               Security
             </CardTitle>
             <CardDescription>
@@ -858,7 +858,7 @@ export default function TeacherSettings() {
               {passwordLoading ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
-                <Lock className="w-4 h-4 mr-2" />
+                <img src="/password-icon.png" alt="Password" className="w-4 h-4 mr-2" />
               )}
               Update Password
             </Button>

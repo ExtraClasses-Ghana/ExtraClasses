@@ -3,12 +3,8 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { motion } from "framer-motion";
 import { 
-  Mail, 
-  Phone, 
-  MapPin, 
   Send, 
   MessageSquare,
-  Clock,
   Loader2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +21,11 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+
+const emailIcon = new URL('../../icons/Email.png', import.meta.url).href;
+const phoneIcon = new URL('../../icons/Phone icon.png', import.meta.url).href;
+const mapIcon = new URL('../../icons/Map icon.png', import.meta.url).href;
+const clockIcon = new URL('../../icons/Clock icon.png', import.meta.url).href;
 
 export default function Contact() {
   const [loading, setLoading] = useState(false);
@@ -71,25 +72,25 @@ export default function Contact() {
 
   const contactInfo = [
     {
-      icon: Mail,
+      icon: emailIcon,
       title: "Email Us",
       details: SUPPORT_EMAIL,
       description: "We'll respond within 24 hours"
     },
     {
-      icon: Phone,
+      icon: phoneIcon,
       title: "Call Us",
       details: PHONE_NUMBER,
       description: "Mon-Fri, 8am-6pm GMT"
     },
     {
-      icon: MapPin,
+      icon: mapIcon,
       title: "Visit Us",
       details: "Accra, Ghana",
       description: "By appointment only"
     },
     {
-      icon: Clock,
+      icon: clockIcon,
       title: "Business Hours",
       details: "8:00 AM - 6:00 PM",
       description: "Monday to Friday"
@@ -155,41 +156,108 @@ export default function Contact() {
         </section>
 
         {/* Contact Info Cards */}
-        <section className="py-12">
+        <section className="py-16 lg:py-24 bg-gradient-to-b from-background via-background to-muted/20">
           <div className="container mx-auto px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="text-center mb-12"
+            >
+              <h2 className="text-2xl font-semibold text-muted-foreground mb-2">Multiple Ways to Connect</h2>
+              <p className="text-muted-foreground">Choose the method that works best for you</p>
+            </motion.div>
+
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {contactInfo.map((info, index) => (
-                <motion.div
-                  key={info.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <Card 
-                    className={`h-full text-center hover:shadow-lg transition-shadow ${
-                      (info.title === "Call Us" || info.title === "Email Us") ? "cursor-pointer hover:border-primary" : ""
-                    }`}
-                    onClick={info.title === "Call Us" ? handleCallClick : (info.title === "Email Us" ? handleEmailClick : undefined)}
+              {contactInfo.map((info, index) => {
+                const isClickable = info.title === "Call Us" || info.title === "Email Us";
+                const cardColors = [
+                  "from-blue-500/10 to-blue-600/10",
+                  "from-green-500/10 to-green-600/10",
+                  "from-orange-500/10 to-orange-600/10",
+                  "from-purple-500/10 to-purple-600/10"
+                ];
+
+                return (
+                  <motion.div
+                    key={info.title}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.15, duration: 0.5 }}
+                    className="h-full"
                   >
-                    <CardContent className="pt-6">
-                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                        <info.icon className="w-6 h-6 text-primary" />
-                      </div>
-                      <h3 className="font-semibold text-foreground mb-1">{info.title}</h3>
-                      <p className={`font-medium ${(info.title === "Call Us" || info.title === "Email Us") ? "text-primary hover:underline" : "text-primary"}`}>
-                        {info.details}
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-1">{info.description}</p>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
+                    <motion.div
+                      whileHover={{ y: -8 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                      className="h-full"
+                    >
+                      <Card 
+                        className={`h-full text-center border-0 shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-${isClickable ? 'pointer' : 'default'}`}
+                        onClick={isClickable ? (info.title === "Call Us" ? handleCallClick : handleEmailClick) : undefined}
+                      >
+                        <div className={`absolute inset-0 bg-gradient-to-br ${cardColors[index]} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+                        
+                        <CardContent className="pt-6 relative z-10">
+                          <motion.div
+                            className={`w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition-colors duration-300`}
+                            whileHover={{ scale: 1.15, rotate: 12 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                          >
+                            <motion.div
+                              initial={{ scale: 1 }}
+                              animate={{ scale: 1 }}
+                              whileHover={{ scale: 1.1 }}
+                            >
+                              <img src={info.icon} alt={info.title} className="w-7 h-7 object-contain" />
+                            </motion.div>
+                          </motion.div>
+
+                          <motion.h3 
+                            className="font-semibold text-foreground mb-2 text-lg"
+                            whileHover={{ scale: 1.05 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            {info.title}
+                          </motion.h3>
+
+                          <motion.p 
+                            className={`font-medium transition-all duration-300 ${
+                              isClickable ? "text-primary hover:text-primary/70" : "text-primary"
+                            }`}
+                            whileHover={{ scale: 1.02 }}
+                          >
+                            {info.details}
+                          </motion.p>
+
+                          <motion.p 
+                            className="text-sm text-muted-foreground mt-2 group-hover:text-foreground transition-colors duration-300"
+                            initial={{ opacity: 0.7 }}
+                            whileHover={{ opacity: 1 }}
+                          >
+                            {info.description}
+                          </motion.p>
+
+                          {isClickable && (
+                            <motion.div
+                              className="mt-3 h-0.5 bg-primary rounded-full"
+                              initial={{ width: 0 }}
+                              whileHover={{ width: "100%" }}
+                              transition={{ duration: 0.3 }}
+                            />
+                          )}
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
         </section>
 
         {/* Contact Form & FAQs */}
-        <section className="py-16 bg-muted/30">
+        <section className="py-20 bg-muted/30">
           <div className="container mx-auto px-4">
             <div className="grid lg:grid-cols-2 gap-12">
               {/* Contact Form */}
@@ -197,49 +265,92 @@ export default function Contact() {
                 initial={{ opacity: 0, x: -24 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+                transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
               >
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <MessageSquare className="w-5 h-5 text-primary" />
-                      Send us a Message
-                    </CardTitle>
+                <Card className="border-0 shadow-xl hover:shadow-2xl transition-shadow duration-300">
+                  <CardHeader className="border-b border-muted/20 pb-6">
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      whileInView={{ scale: 1, opacity: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.1 }}
+                    >
+                      <CardTitle className="flex items-center gap-3 text-xl">
+                        <motion.div
+                          whileHover={{ rotate: 20, scale: 1.1 }}
+                          transition={{ type: "spring", stiffness: 300 }}
+                          className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center"
+                        >
+                          <MessageSquare className="w-5 h-5 text-primary" />
+                        </motion.div>
+                        Send us a Message
+                      </CardTitle>
+                    </motion.div>
                   </CardHeader>
-                  <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="name">Full Name</Label>
-                          <Input
-                            id="name"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            placeholder="Your name"
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="email">Email Address</Label>
-                          <Input
-                            id="email"
-                            type="email"
-                            value={formData.email}
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            placeholder="your@email.com"
-                            required
-                          />
-                        </div>
+                  <CardContent className="pt-8">
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                      <div className="grid sm:grid-cols-2 gap-5">
+                        <motion.div
+                          className="space-y-2"
+                          initial={{ opacity: 0, y: 10 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 0.1 }}
+                        >
+                          <Label htmlFor="name" className="font-medium">Full Name</Label>
+                          <motion.div
+                            whileFocus={{ scale: 1.01 }}
+                            transition={{ type: "spring", stiffness: 300 }}
+                          >
+                            <Input
+                              id="name"
+                              value={formData.name}
+                              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                              placeholder="Your name"
+                              required
+                              className="transition-all duration-200 focus:ring-2 focus:ring-primary/50"
+                            />
+                          </motion.div>
+                        </motion.div>
+                        <motion.div
+                          className="space-y-2"
+                          initial={{ opacity: 0, y: 10 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 0.15 }}
+                        >
+                          <Label htmlFor="email" className="font-medium">Email Address</Label>
+                          <motion.div
+                            whileFocus={{ scale: 1.01 }}
+                            transition={{ type: "spring", stiffness: 300 }}
+                          >
+                            <Input
+                              id="email"
+                              type="email"
+                              value={formData.email}
+                              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                              placeholder="your@email.com"
+                              required
+                              className="transition-all duration-200 focus:ring-2 focus:ring-primary/50"
+                            />
+                          </motion.div>
+                        </motion.div>
                       </div>
 
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="category">Category</Label>
+                      <div className="grid sm:grid-cols-2 gap-5">
+                        <motion.div
+                          className="space-y-2"
+                          initial={{ opacity: 0, y: 10 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 0.2 }}
+                        >
+                          <Label htmlFor="category" className="font-medium">Category</Label>
                           <Select
                             value={formData.category}
                             onValueChange={(value) => setFormData({ ...formData, category: value })}
                           >
-                            <SelectTrigger>
+                            <SelectTrigger className="transition-all duration-200 focus:ring-2 focus:ring-primary/50">
                               <SelectValue placeholder="Select category" />
                             </SelectTrigger>
                             <SelectContent>
@@ -250,44 +361,87 @@ export default function Contact() {
                               <SelectItem value="feedback">Feedback</SelectItem>
                             </SelectContent>
                           </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="subject">Subject</Label>
-                          <Input
-                            id="subject"
-                            value={formData.subject}
-                            onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                            placeholder="How can we help?"
+                        </motion.div>
+                        <motion.div
+                          className="space-y-2"
+                          initial={{ opacity: 0, y: 10 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 0.25 }}
+                        >
+                          <Label htmlFor="subject" className="font-medium">Subject</Label>
+                          <motion.div
+                            whileFocus={{ scale: 1.01 }}
+                            transition={{ type: "spring", stiffness: 300 }}
+                          >
+                            <Input
+                              id="subject"
+                              value={formData.subject}
+                              onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                              placeholder="How can we help?"
+                              required
+                              className="transition-all duration-200 focus:ring-2 focus:ring-primary/50"
+                            />
+                          </motion.div>
+                        </motion.div>
+                      </div>
+
+                      <motion.div
+                        className="space-y-2"
+                        initial={{ opacity: 0, y: 10 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        <Label htmlFor="message" className="font-medium">Message</Label>
+                        <motion.div
+                          whileFocus={{ scale: 1.01 }}
+                          transition={{ type: "spring", stiffness: 300 }}
+                        >
+                          <Textarea
+                            id="message"
+                            value={formData.message}
+                            onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                            placeholder="Tell us more about your inquiry..."
+                            rows={5}
                             required
+                            className="transition-all duration-200 focus:ring-2 focus:ring-primary/50 resize-none"
                           />
-                        </div>
-                      </div>
+                        </motion.div>
+                      </motion.div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="message">Message</Label>
-                        <Textarea
-                          id="message"
-                          value={formData.message}
-                          onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                          placeholder="Tell us more about your inquiry..."
-                          rows={5}
-                          required
-                        />
-                      </div>
-
-                      <Button type="submit" className="w-full btn-coral" disabled={loading}>
-                        {loading ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Sending...
-                          </>
-                        ) : (
-                          <>
-                            <Send className="w-4 h-4 mr-2" />
-                            Send Message
-                          </>
-                        )}
-                      </Button>
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.35 }}
+                      >
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          type="submit"
+                          disabled={loading}
+                          className="w-full btn-coral font-medium py-2.5 rounded-lg transition-all duration-200"
+                        >
+                          <motion.div
+                            className="flex items-center justify-center"
+                            animate={loading ? { opacity: [1, 0.7, 1] } : {}}
+                            transition={{ duration: 1.5, repeat: Infinity }}
+                          >
+                            {loading ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Sending...
+                              </>
+                            ) : (
+                              <>
+                                <Send className="w-4 h-4 mr-2" />
+                                Send Message
+                              </>
+                            )}
+                          </motion.div>
+                        </motion.button>
+                      </motion.div>
                     </form>
                   </CardContent>
                 </Card>
@@ -298,40 +452,99 @@ export default function Contact() {
                 initial={{ opacity: 0, x: 24 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+                transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
                 className="space-y-6"
               >
-                <h2 className="text-2xl font-display font-bold text-foreground">
-                  Frequently Asked Questions
-                </h2>
-                <div className="space-y-4">
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.1 }}
+                >
+                  <h2 className="text-2xl font-display font-bold text-foreground mb-2">
+                    Frequently Asked Questions
+                  </h2>
+                  <p className="text-muted-foreground">Quick answers to common questions</p>
+                </motion.div>
+
+                <div className="space-y-3">
                   {faqs.map((faq, index) => (
-                    <Card key={index}>
-                      <CardContent className="pt-6">
-                        <h3 className="font-semibold text-foreground mb-2">{faq.question}</h3>
-                        <p className="text-sm text-muted-foreground">{faq.answer}</p>
-                      </CardContent>
-                    </Card>
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, x: 20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true, margin: "-30px" }}
+                      transition={{ delay: 0.1 + index * 0.1, duration: 0.4 }}
+                    >
+                      <motion.div
+                        whileHover={{ y: -4, boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <Card className="border-0 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group">
+                          <div className="absolute inset-0 h-1 bg-gradient-to-r from-primary to-accent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          <CardContent className="pt-6">
+                            <motion.h3
+                              className="font-semibold text-foreground mb-2 group-hover:text-primary transition-colors duration-300"
+                              whileHover={{ x: 4 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              {faq.question}
+                            </motion.h3>
+                            <motion.p
+                              className="text-sm text-muted-foreground group-hover:text-foreground transition-colors duration-300"
+                              initial={{ opacity: 0.8 }}
+                              whileHover={{ opacity: 1 }}
+                            >
+                              {faq.answer}
+                            </motion.p>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    </motion.div>
                   ))}
                 </div>
 
-                <Card className="bg-primary text-primary-foreground">
-                  <CardContent className="pt-6">
-                    <h3 className="font-semibold mb-2">Still have questions?</h3>
-                    <p className="text-sm text-primary-foreground/80 mb-4">
-                      Our support team is available Monday to Friday, 8am-6pm GMT.
-                    </p>
-                    <Button 
-                      variant="secondary" 
-                      className="w-full sm:w-auto"
-                      onClick={handleCallClick}
-                      title={`Call us at ${PHONE_NUMBER}`}
-                    >
-                      <Phone className="w-4 h-4 mr-2" />
-                      Call {PHONE_NUMBER}
-                    </Button>
-                  </CardContent>
-                </Card>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-30px" }}
+                  transition={{ delay: 0.4 }}
+                  whileHover={{ y: -4 }}
+                >
+                  <Card className="bg-gradient-to-br from-primary via-primary/90 to-accent/80 text-primary-foreground border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
+                    <CardContent className="pt-6">
+                      <motion.div
+                        initial={{ scale: 0.95 }}
+                        whileInView={{ scale: 1 }}
+                        viewport={{ once: true }}
+                      >
+                        <h3 className="font-semibold mb-2 text-lg">Still have questions?</h3>
+                        <p className="text-sm text-primary-foreground/80 mb-4">
+                          Our support team is available Monday to Friday, 8am-6pm GMT.
+                        </p>
+                        <motion.div
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Button 
+                            variant="secondary" 
+                            className="w-full sm:w-auto font-medium transition-all duration-200"
+                            onClick={handleCallClick}
+                            title={`Call us at ${PHONE_NUMBER}`}
+                          >
+                            <motion.div
+                              className="flex items-center"
+                              whileHover={{ x: 4 }}
+                            >
+                              <img src={phoneIcon} alt="call" className="w-4 h-4 mr-2 object-contain" />
+                              Call {PHONE_NUMBER}
+                            </motion.div>
+                          </Button>
+                        </motion.div>
+                      </motion.div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               </motion.div>
             </div>
           </div>

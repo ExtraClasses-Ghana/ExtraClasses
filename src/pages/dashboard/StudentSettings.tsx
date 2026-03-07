@@ -247,18 +247,24 @@ export default function StudentSettings() {
                 </AvatarFallback>
               </Avatar>
               <div>
+                <label htmlFor="avatar-upload" className="sr-only">
+                  Upload avatar
+                </label>
                 <input
+                  id="avatar-upload"
                   ref={fileInputRef}
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   className="hidden"
                   onChange={handleFileSelect}
+                  aria-label="Upload avatar image"
                 />
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingImage}
+                  aria-label="Change avatar photo"
                 >
                   {uploadingImage ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -397,7 +403,7 @@ export default function StudentSettings() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Lock className="w-5 h-5" />
+              <img src="/password-icon.png" alt="Password" className="w-5 h-5" />
               Security
             </CardTitle>
             <CardDescription>
@@ -435,7 +441,7 @@ export default function StudentSettings() {
               {passwordLoading ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
-                <Lock className="w-4 h-4 mr-2" />
+                <img src="/password-icon.png" alt="Password" className="w-4 h-4 mr-2" />
               )}
               Update Password
             </Button>

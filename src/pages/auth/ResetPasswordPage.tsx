@@ -84,7 +84,7 @@ export default function ResetPasswordPage() {
           <div className='bg-white rounded-2xl shadow-lg p-8'>
             <div className='flex justify-center mb-6'>
               <div className='w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center'>
-                <Lock className='w-8 h-8 text-white' />
+                <img src="/password-icon.png" alt="Password" className='w-8 h-8' />
               </div>
             </div>
 
@@ -153,7 +153,7 @@ export default function ResetPasswordPage() {
           <div className='bg-white rounded-2xl shadow-lg p-8'>
             <div className='flex justify-center mb-6'>
               <div className='w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center'>
-                <Lock className='w-8 h-8 text-white' />
+                <img src="/password-icon.png" alt="Password" className='w-8 h-8' />
               </div>
             </div>
 

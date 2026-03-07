@@ -308,9 +308,9 @@ export default function AdminSessions() {
                   variant="outline"
                   disabled={loading || filtered.length === 0 || isExporting}
                   onClick={handleExportPDF}
-                  className="gap-2"
+                  className="gap-2 hover:scale-105 transition-all duration-200 hover:shadow-md p-2"
                 >
-                  <FileText className="w-4 h-4" />
+                  <img src="/pdf-icon.png" alt="PDF" className="w-[50px] h-[50px]" />
                   PDF {isExporting && '...'}
                 </Button>
                 <Button
@@ -318,9 +318,9 @@ export default function AdminSessions() {
                   variant="outline"
                   disabled={loading || filtered.length === 0 || isExporting}
                   onClick={handleExportExcel}
-                  className="gap-2"
+                  className="gap-2 hover:scale-105 transition-all duration-200 hover:shadow-md p-2"
                 >
-                  <Download className="w-4 h-4" />
+                  <img src="/excel-icon.png" alt="Excel" className="w-[50px] h-[50px]" />
                   Excel
                 </Button>
                 <Button
@@ -328,9 +328,9 @@ export default function AdminSessions() {
                   variant="outline"
                   disabled={loading || filtered.length === 0 || isExporting}
                   onClick={handleExportWord}
-                  className="gap-2"
+                  className="gap-2 hover:scale-105 transition-all duration-200 hover:shadow-md p-2"
                 >
-                  <FileText className="w-4 h-4" />
+                  <img src="/word-icon.png" alt="Word" className="w-[50px] h-[50px]" />
                   Word
                 </Button>
               </div>

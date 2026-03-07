@@ -80,9 +80,9 @@ export function HeroSection() {
             className="text-center"
           >
             <img 
-              src={logo} 
+              src="/logo-animate.gif" 
               alt="ExtraClasses Ghana" 
-              className="w-40 h-40 lg:w-56 lg:h-56 mx-auto object-contain drop-shadow-xl"
+              className="w-64 h-64 lg:w-80 lg:h-80 mx-auto object-contain drop-shadow-xl"
             />
           </motion.div>
         </div>

@@ -258,6 +258,50 @@ export default function AdminTeachers() {
     return null;
   };
 
+  const handleExportPDF = async () => {
+    try {
+      // Simple CSV export for now
+      const csvData = filteredTeachers.map(teacher => ({
+        Name: teacher.profile?.full_name || '',
+        Email: teacher.profile?.email || '',
+        Region: teacher.profile?.region || '',
+        Subjects: teacher.subjects?.join(', ') || '',
+        Rate: teacher.hourly_rate || 0,
+        Rating: teacher.rating || 0,
+        Status: teacher.verification_status,
+        Verified: teacher.is_verified ? 'Yes' : 'No'
+      }));
+      
+      const csv = [
+        Object.keys(csvData[0]).join(','),
+        ...csvData.map(row => Object.values(row).join(','))
+      ].join('\n');
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `teachers-export-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      
+      toast({ title: 'Success', description: 'Teachers exported as CSV' });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({ title: 'Export Failed', description: 'Failed to export teachers', variant: 'destructive' });
+    }
+  };
+
+  const handleExportExcel = async () => {
+    // For now, same as PDF
+    await handleExportPDF();
+  };
+
+  const handleExportWord = async () => {
+    // For now, same as PDF
+    await handleExportPDF();
+  };
+
   return (
     <AdminDashboardLayout
       title="Manage Teachers"
@@ -328,7 +372,44 @@ export default function AdminTeachers() {
       {/* Teachers Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Teachers ({filteredTeachers.length})</CardTitle>
+          <div className="flex flex-col gap-4">
+            <div>
+              <CardTitle>All Teachers ({filteredTeachers.length})</CardTitle>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-medium text-muted-foreground">Export:</span>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={loading || filteredTeachers.length === 0}
+                onClick={() => handleExportPDF()}
+                className="gap-2 hover:scale-105 transition-all duration-200 hover:shadow-md p-2"
+              >
+                <img src="/pdf-icon.png" alt="PDF" className="w-[50px] h-[50px]" />
+                PDF
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={loading || filteredTeachers.length === 0}
+                onClick={() => handleExportExcel()}
+                className="gap-2 hover:scale-105 transition-all duration-200 hover:shadow-md p-2"
+              >
+                <img src="/excel-icon.png" alt="Excel" className="w-[50px] h-[50px]" />
+                Excel
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={loading || filteredTeachers.length === 0}
+                onClick={() => handleExportWord()}
+                className="gap-2 hover:scale-105 transition-all duration-200 hover:shadow-md p-2"
+              >
+                <img src="/word-icon.png" alt="Word" className="w-[50px] h-[50px]" />
+                Word
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
