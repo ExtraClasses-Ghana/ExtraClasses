@@ -164,7 +164,33 @@ export default function Subjects() {
         .order("name");
 
       if (error) throw error;
-      setSubjects(data || []);
+
+      // Fetch verified teachers to count teachers per subject
+      const { data: teacherProfiles, error: teacherError } = await supabase
+        .from("teacher_profiles")
+        .select("subjects, verification_status, is_verified")
+        .or("verification_status.eq.verified,is_verified.eq.true");
+
+      if (teacherError) {
+        console.error("Error fetching teachers:", teacherError);
+      }
+
+      // Count teachers per subject
+      const subjectTeacherCount: Record<string, number> = {};
+      (teacherProfiles || []).forEach((tp: any) => {
+        const subjects = tp.subjects || [];
+        subjects.forEach((subject: string) => {
+          subjectTeacherCount[subject] = (subjectTeacherCount[subject] || 0) + 1;
+        });
+      });
+
+      // Update teacher_count for each subject
+      const enrichedSubjects = (data || []).map((subject: any) => ({
+        ...subject,
+        teacher_count: subjectTeacherCount[subject.name] || 0,
+      }));
+
+      setSubjects(enrichedSubjects);
     } catch (error) {
       console.error("Error fetching subjects:", error);
     } finally {
@@ -302,7 +328,7 @@ export default function Subjects() {
 
                           <div className="flex items-center justify-between pt-4 border-t">
                             <span className="text-sm text-muted-foreground">
-                              {subject.teacher_count} Teachers
+                              {subject.teacher_count} {subject.teacher_count === 1 ? "Teacher" : "Teachers"}
                             </span>
                             <Link to={`/teachers?subject=${encodeURIComponent(subject.name)}`}>
                               <Button variant="ghost" size="sm" className="group-hover:text-primary">

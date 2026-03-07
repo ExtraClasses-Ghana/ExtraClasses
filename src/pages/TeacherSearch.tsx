@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search, Grid3X3, List, Map, X, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
@@ -24,6 +25,7 @@ const defaultFilters: FilterState = {
 };
 
 export default function TeacherSearch() {
+  const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [view, setView] = useState<"grid" | "list">("grid");
@@ -31,6 +33,17 @@ export default function TeacherSearch() {
   const [sortBy, setSortBy] = useState<"rating" | "price-low" | "price-high" | "reviews">("rating");
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Initialize filters with query parameters if provided
+  useEffect(() => {
+    const subjectParam = searchParams.get("subject");
+    if (subjectParam) {
+      setFilters(prev => ({
+        ...prev,
+        subject: subjectParam
+      }));
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchTeachers();

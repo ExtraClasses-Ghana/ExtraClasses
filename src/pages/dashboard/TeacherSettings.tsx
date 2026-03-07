@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -15,6 +16,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,7 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { 
   User, Bell, Lock, CreditCard, Camera, Loader2, Save, GraduationCap, 
-  Trash2, AlertTriangle, CheckCircle, XCircle, FileText, Upload, Trophy
+  Trash2, AlertTriangle, CheckCircle, XCircle, FileText, Upload, Trophy, ChevronDown
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -621,21 +627,58 @@ export default function TeacherSettings() {
                   <span className="text-sm text-muted-foreground">Loading subjects...</span>
                 </div>
               ) : subjects.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {subjects.map((subject) => (
-                    <Badge
-                      key={subject.id}
-                      variant={formData.subjects.includes(subject.name) ? "default" : "outline"}
-                      className="cursor-pointer"
-                      onClick={() => toggleSubject(subject.name)}
-                      title={subject.description || subject.name}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between bg-white"
                     >
-                      {subject.name}
+                      <span className="truncate">
+                        {formData.subjects.length === 0
+                          ? "Select subjects..."
+                          : `${formData.subjects.length} subject${formData.subjects.length !== 1 ? "s" : ""} selected`}
+                      </span>
+                      <ChevronDown className="w-4 h-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-4" align="start">
+                    <div className="space-y-3">
+                      {subjects.map((subject) => (
+                        <div key={subject.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`subject-${subject.id}`}
+                            checked={formData.subjects.includes(subject.name)}
+                            onCheckedChange={() => toggleSubject(subject.name)}
+                          />
+                          <label
+                            htmlFor={`subject-${subject.id}`}
+                            className="text-sm font-medium cursor-pointer flex-1"
+                            title={subject.description || subject.name}
+                          >
+                            {subject.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                <p className="text-sm text-muted-foreground">No subjects available. Please contact support.</p>
+              )}
+              {formData.subjects.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {formData.subjects.map((subject) => (
+                    <Badge key={subject} variant="secondary">
+                      {subject}
+                      <button
+                        onClick={() => toggleSubject(subject)}
+                        className="ml-1 hover:text-destructive"
+                      >
+                        ×
+                      </button>
                     </Badge>
                   ))}
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No subjects available. Please contact support.</p>
               )}
             </div>
 
