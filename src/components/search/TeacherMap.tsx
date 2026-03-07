@@ -128,7 +128,7 @@ export function TeacherMap({ teachers, selectedRegion, onTeacherSelect }: Teache
           <div class="teacher-popup-footer">
             <span class="teacher-popup-price">GH₵${teacher.hourlyRate}/hr</span>
             <a 
-              href="/#/teacher/${teacher.id}" 
+              href="/teacher/${teacher.id}" 
               class="teacher-popup-button"
             >
               View Profile
