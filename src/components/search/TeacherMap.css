@@ -1,0 +1,131 @@
+.teacher-popup {
+  padding: 8px;
+  min-width: 200px;
+}
+
+.teacher-popup-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.teacher-popup-image {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.teacher-popup-info {
+  flex: 1;
+}
+
+.teacher-popup-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.teacher-popup-verified {
+  color: #4FD1C7;
+  font-size: 12px;
+}
+
+.teacher-popup-subject {
+  font-size: 12px;
+  color: #666;
+  margin: 2px 0;
+}
+
+.teacher-popup-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.teacher-popup-rating-star {
+  color: #ECC94B;
+}
+
+.teacher-popup-rating-value {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.teacher-popup-rating-count {
+  font-size: 12px;
+  color: #888;
+}
+
+.teacher-popup-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+}
+
+.teacher-popup-price {
+  font-weight: 700;
+  color: #FF7E5D;
+}
+
+.teacher-popup-button {
+  background: #FF7E5D;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.teacher-popup-button:hover {
+  background: #E86A45;
+  text-decoration: none;
+}
+
+/* Map Container */
+.teacher-map-container {
+  min-height: 400px;
+  width: 100%;
+  height: 100%;
+}
+
+/* Marker Styles */
+.custom-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-marker-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-marker-badge.verified {
+  background: #4FD1C7;
+}
+
+.custom-marker-badge.standard {
+  background: #FF7E5D;
+}
+
+.custom-marker-icon {
+  width: 20px;
+  height: 20px;
+  color: white;
+}

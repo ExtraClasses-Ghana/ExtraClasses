@@ -5,6 +5,7 @@ import { Star, BadgeCheck, MapPin } from "lucide-react";
 import { Teacher, ghanaRegionCoordinates } from "@/data/teachers";
 import { Button } from "@/components/ui/button";
 import "leaflet/dist/leaflet.css";
+import "./TeacherMap.css";
 
 // Fix for default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -54,22 +55,13 @@ export function TeacherMap({ teachers, selectedRegion, onTeacherSelect }: Teache
   };
 
   // Create custom icon
-  const createCustomIcon = (verified: boolean) =>
-    L.divIcon({
+  const createCustomIcon = (verified: boolean) => {
+    const markerClass = verified ? "verified" : "standard";
+    return L.divIcon({
       className: "custom-marker",
       html: `
-        <div style="
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          background: ${verified ? "#4FD1C7" : "#FF7E5D"};
-          border: 3px solid white;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        ">
-          <svg style="width: 20px; height: 20px; color: white;" fill="currentColor" viewBox="0 0 24 24">
+        <div class="custom-marker-badge ${markerClass}">
+          <svg class="custom-marker-icon" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
           </svg>
         </div>
@@ -78,6 +70,7 @@ export function TeacherMap({ teachers, selectedRegion, onTeacherSelect }: Teache
       iconAnchor: [20, 40],
       popupAnchor: [0, -40],
     });
+  };
 
   // Initialize map
   useEffect(() => {
@@ -112,39 +105,31 @@ export function TeacherMap({ teachers, selectedRegion, onTeacherSelect }: Teache
       });
 
       const popupContent = `
-        <div style="padding: 8px; min-width: 200px;">
-          <div style="display: flex; align-items: start; gap: 12px;">
+        <div class="teacher-popup">
+          <div class="teacher-popup-header">
             <img 
               src="${teacher.image}" 
               alt="${teacher.name}"
-              style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;"
+              class="teacher-popup-image"
             />
-            <div style="flex: 1;">
-              <div style="display: flex; align-items: center; gap: 4px;">
-                <strong style="font-size: 14px;">${teacher.name}</strong>
-                ${teacher.verified ? '<span style="color: #4FD1C7;">✓</span>' : ""}
+            <div class="teacher-popup-info">
+              <div class="teacher-popup-name">
+                <strong>${teacher.name}</strong>
+                ${teacher.verified ? '<span class="teacher-popup-verified">✓</span>' : ""}
               </div>
-              <p style="font-size: 12px; color: #666; margin: 2px 0;">${teacher.subject}</p>
-              <div style="display: flex; align-items: center; gap: 4px; margin-top: 4px;">
-                <span style="color: #ECC94B;">★</span>
-                <span style="font-size: 12px; font-weight: 500;">${teacher.rating}</span>
-                <span style="font-size: 12px; color: #888;">(${teacher.reviews})</span>
+              <p class="teacher-popup-subject">${teacher.subject}</p>
+              <div class="teacher-popup-rating">
+                <span class="teacher-popup-rating-star">★</span>
+                <span class="teacher-popup-rating-value">${teacher.rating}</span>
+                <span class="teacher-popup-rating-count">(${teacher.reviews})</span>
               </div>
             </div>
           </div>
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee;">
-            <span style="font-weight: 700; color: #FF7E5D;">GH₵${teacher.hourlyRate}/hr</span>
+          <div class="teacher-popup-footer">
+            <span class="teacher-popup-price">GH₵${teacher.hourlyRate}/hr</span>
             <a 
-              href="/teacher/${teacher.id}" 
-              style="
-                background: #FF7E5D;
-                color: white;
-                padding: 6px 12px;
-                border-radius: 8px;
-                font-size: 12px;
-                font-weight: 500;
-                text-decoration: none;
-              "
+              href="/#/teacher/${teacher.id}" 
+              class="teacher-popup-button"
             >
               View Profile
             </a>
@@ -171,7 +156,7 @@ export function TeacherMap({ teachers, selectedRegion, onTeacherSelect }: Teache
 
   return (
     <div className="w-full h-full rounded-2xl overflow-hidden shadow-lg relative">
-      <div ref={mapRef} className="w-full h-full" style={{ minHeight: "400px" }} />
+      <div ref={mapRef} className="teacher-map-container" />
       
       {/* Legend */}
       <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-md p-3 z-[1000]">

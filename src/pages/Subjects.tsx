@@ -43,8 +43,18 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { EDUCATION_CATEGORIES } from "@/hooks/useEducationLevel";
 
 interface Subject {
   id: string;
@@ -137,6 +147,7 @@ const colorMap: Record<string, string> = {
 
 export default function Subjects() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedEducationLevel, setSelectedEducationLevel] = useState("All Levels");
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -161,10 +172,17 @@ export default function Subjects() {
     }
   };
 
-  const filteredSubjects = subjects.filter(subject =>
-    subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    subject.topics?.some(topic => topic.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredSubjects = subjects.filter(subject => {
+    // Search filter
+    const matchesSearch = subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      subject.topics?.some(topic => topic.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    // Education level filter
+    const matchesEducationLevel = selectedEducationLevel === "All Levels" || 
+      subject.education_level === selectedEducationLevel;
+    
+    return matchesSearch && matchesEducationLevel;
+  });
 
   const getIcon = (iconName: string | null) => {
     if (!iconName) return BookOpen;
@@ -197,16 +215,38 @@ export default function Subjects() {
                 Find expert tutors across a wide range of academic subjects
               </p>
               
-              {/* Search */}
-              <div className="relative max-w-md mx-auto">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search subjects or topics..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-12 h-12 bg-white/95 border-0 text-foreground"
-                />
+              {/* Search and Filters */}
+              <div className="flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search subjects or topics..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-12 h-12 bg-white/95 border-0 text-foreground"
+                  />
+                </div>
+                
+                {/* Education Level Filter */}
+                <div className="sm:w-48">
+                  <Select
+                    value={selectedEducationLevel}
+                    onValueChange={setSelectedEducationLevel}
+                  >
+                    <SelectTrigger className="h-12 bg-white/95 border-0 text-foreground">
+                      <SelectValue placeholder="All Levels" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border-border z-50">
+                      <SelectItem value="All Levels">All Levels</SelectItem>
+                      {EDUCATION_CATEGORIES.map((level) => (
+                        <SelectItem key={level} value={level}>
+                          {level}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </motion.div>
           </div>

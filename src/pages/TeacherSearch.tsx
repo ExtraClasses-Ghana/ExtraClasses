@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 const defaultFilters: FilterState = {
   subject: "All Subjects",
   location: "All Regions",
-  educationLevel: 'All Levels',
+  educationLevel: "All Levels",
   priceRange: [0, 200],
   minRating: 0,
   online: false,
@@ -203,7 +203,7 @@ export default function TeacherSearch() {
 
     // Education level filter
     if (filters.educationLevel && filters.educationLevel !== 'All Levels') {
-      result = result.filter((t) => (t.educationLevels || []).includes(filters.educationLevel as string));
+      result = result.filter((t) => (t.educationLevels || []).includes(filters.educationLevel));
     }
 
     // Location filter
@@ -263,6 +263,7 @@ export default function TeacherSearch() {
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (filters.subject !== "All Subjects") count++;
+    if (filters.educationLevel !== "All Levels") count++;
     if (filters.location !== "All Regions") count++;
     if (filters.priceRange[0] > 0 || filters.priceRange[1] < 200) count++;
     if (filters.minRating > 0) count++;
