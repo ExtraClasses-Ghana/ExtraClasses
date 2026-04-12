@@ -26,7 +26,7 @@ interface AuthContextType {
   profile: Profile | null;
   role: AppRole | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string, role: AppRole, educationLevel?: string, educationSubCategory?: string | null) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string, role: AppRole, educationLevel?: string, educationSubCategory?: string | null, phone?: string) => Promise<{ error: Error | null; data?: any }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
@@ -141,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string, role: AppRole, educationLevel?: string, educationSubCategory?: string | null) => {
+  const signUp = async (email: string, password: string, fullName: string, role: AppRole, educationLevel?: string, educationSubCategory?: string | null, phone?: string) => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -153,24 +153,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             role: role,
             education_level: educationLevel || null,
             education_sub_category: educationSubCategory || null,
+            phone: phone || null,
           },
         },
       });
 
       if (error) throw error;
 
-      // Update profile with education category (trigger creates profile; update once it exists)
-      if (data.user && educationLevel) {
+      // Update profile with extra params (trigger creates profile initially; update completes it)
+      if (data.user && (educationLevel || phone)) {
         await supabase
           .from("profiles")
           .update({
-            education_level: educationLevel,
+            education_level: educationLevel || null,
             education_sub_category: educationSubCategory || null,
-          })
+            phone: phone || null,
+          } as any)
           .eq("user_id", data.user.id);
       }
 
-      return { error: null };
+      return { error: null, data: { user: data.user, session: data.session } };
     } catch (error) {
       return { error: error as Error };
     }

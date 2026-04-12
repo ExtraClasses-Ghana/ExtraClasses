@@ -39,7 +39,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { EDUCATION_CATEGORIES } from "@/hooks/useEducationLevel";
+import { useEducationLevels } from "@/hooks/useEducationLevel";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Subject {
   id: string;
@@ -67,7 +68,14 @@ export default function AdminSubjects() {
   const [description, setDescription] = useState("");
   const [icon, setIcon] = useState("");
   const [topics, setTopics] = useState("");
-  const [educationLevel, setEducationLevel] = useState<string>(EDUCATION_CATEGORIES[0]);
+  const { levels: educationLevels, loading: loadingLevels } = useEducationLevels();
+  const [educationLevel, setEducationLevel] = useState<string>("");
+
+  useEffect(() => {
+    if (!educationLevel && educationLevels.length > 0) {
+      setEducationLevel(educationLevels[0].name);
+    }
+  }, [educationLevels, educationLevel]);
 
   useEffect(() => {
     fetchSubjects();
@@ -81,7 +89,7 @@ export default function AdminSubjects() {
         .order("name");
 
       if (error) throw error;
-      setSubjects(data || []);
+      setSubjects((data as any) || []);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -98,7 +106,7 @@ export default function AdminSubjects() {
     setDescription("");
     setIcon("");
     setTopics("");
-    setEducationLevel(EDUCATION_CATEGORIES[0]);
+    setEducationLevel(educationLevels.length > 0 ? educationLevels[0].name : "");
     setEditingSubject(null);
   };
 
@@ -108,7 +116,7 @@ export default function AdminSubjects() {
     setDescription(subject.description || "");
     setIcon(subject.icon || "");
     setTopics(subject.topics?.join(", ") || "");
-    setEducationLevel(subject.education_level || EDUCATION_CATEGORIES[0]);
+    setEducationLevel(subject.education_level || (educationLevels.length > 0 ? educationLevels[0].name : ""));
     setIsDialogOpen(true);
   };
 
@@ -128,7 +136,7 @@ export default function AdminSubjects() {
         icon: icon || null,
         topics: topicsArray,
         is_active: true,
-        education_level: educationLevel || EDUCATION_CATEGORIES[0],
+        education_level: educationLevel || (educationLevels.length > 0 ? educationLevels[0].name : ""),
         education_sub_category: null,
       };
 
@@ -203,253 +211,321 @@ export default function AdminSubjects() {
   };
 
   return (
-    <AdminDashboardLayout title="Subjects Management" subtitle="Manage subject categories and topics">
-      <div className="space-y-6">
-        {/* Action Button */}
-        <div className="flex justify-end">
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) resetForm();
-          }}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Subject
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingSubject ? "Edit Subject" : "Add New Subject"}
-                </DialogTitle>
-              </DialogHeader>
-              
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Subject Name *</Label>
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g., Mathematics"
-                    required
-                  />
+    <AdminDashboardLayout title="" subtitle="">
+      <div className="relative min-h-[85vh] p-6 -mx-6 -mt-6">
+        <div className="absolute inset-0 bg-background/50 pointer-events-none z-0" />
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 blur-[120px] rounded-full pointer-events-none z-0 mix-blend-screen" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-blue-500/10 blur-[150px] rounded-full pointer-events-none z-0 mix-blend-screen" />
+        
+        <div className="relative z-10 space-y-8">
+          
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 p-8 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-lg ring-1 ring-white/5">
+            <div>
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-3 mb-2"
+              >
+                <div className="p-3 rounded-xl bg-primary/20 ring-1 ring-primary/30">
+                  <BookOpen className="w-6 h-6 text-primary" />
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Education Level *</Label>
-                  <Select
-                    value={educationLevel}
-                    onValueChange={setEducationLevel}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select education level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {EDUCATION_CATEGORIES.map((level) => (
-                        <SelectItem key={level} value={level}>
-                          {level}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Subjects are shown to teachers under this education level when they fill their profile.
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Brief description of the subject"
-                    rows={3}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="icon">Icon Name</Label>
-                  <Input
-                    id="icon"
-                    value={icon}
-                    onChange={(e) => setIcon(e.target.value)}
-                    placeholder="e.g., Calculator, BookOpen"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Use Lucide icon names like: Calculator, FlaskConical, BookOpen, Globe2
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="topics">Topics (comma-separated)</Label>
-                  <Textarea
-                    id="topics"
-                    value={topics}
-                    onChange={(e) => setTopics(e.target.value)}
-                    placeholder="Algebra, Geometry, Calculus, Statistics"
-                    rows={2}
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setIsDialogOpen(false);
-                      resetForm();
-                    }}
-                    className="flex-1"
-                  >
-                    Cancel
+                <h2 className="text-3xl font-display font-bold text-foreground bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+                  Subject Management
+                </h2>
+              </motion.div>
+              <motion.p 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="text-muted-foreground ml-16"
+              >
+                Organize learning materials systematically across different subjects
+              </motion.p>
+            </div>
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+              className="flex gap-4 items-center"
+            >
+              <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                setIsDialogOpen(open);
+                if (!open) resetForm();
+              }}>
+                <DialogTrigger asChild>
+                  <Button className="rounded-xl shadow-md gap-2" size="lg">
+                    <Plus className="w-5 h-5" />
+                    Add Subject
                   </Button>
-                  <Button type="submit" className="flex-1" disabled={saving}>
-                    {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    {editingSubject ? "Update" : "Add Subject"}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
+                </DialogTrigger>
+                <DialogContent className="max-w-xl glassmorphism-dialog border-white/10 rounded-2xl overflow-hidden shadow-2xl p-0">
+                  <div className="absolute top-0 right-0 w-full h-1.5 bg-gradient-to-r from-primary to-blue-600" />
+                  <div className="p-6">
+                    <DialogHeader className="mb-6">
+                      <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                        <BookOpen className="w-6 h-6 text-primary" />
+                        {editingSubject ? "Edit Subject" : "Add New Subject"}
+                      </DialogTitle>
+                    </DialogHeader>
+                    
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name" className="text-foreground/80 font-semibold">Subject Name *</Label>
+                        <Input
+                          id="name"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="e.g., Mathematics"
+                          required
+                          className="bg-background/50 border-white/20 focus:border-primary rounded-xl"
+                        />
+                      </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-xl bg-blue-100">
-                  <BookOpen className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{subjects.length}</p>
-                  <p className="text-sm text-muted-foreground">Total Subjects</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-xl bg-green-100">
-                  <BookOpen className="w-6 h-6 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{subjects.filter(s => s.is_active).length}</p>
-                  <p className="text-sm text-muted-foreground">Active</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-xl bg-purple-100">
-                  <Users className="w-6 h-6 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">
-                    {subjects.reduce((sum, s) => sum + s.teacher_count, 0)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Teachers</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Subjects Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>All Subjects</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin" />
-              </div>
-            ) : subjects.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No subjects found. Add your first subject to get started.
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Subject Name</TableHead>
-                      <TableHead>Education Level</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Topics</TableHead>
-                      <TableHead>Teachers</TableHead>
-                      <TableHead>Active</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {subjects.map((subject) => (
-                      <TableRow key={subject.id}>
-                        <TableCell className="font-medium">
-                          {subject.name}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">
-                            {subject.education_level || "—"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="max-w-[200px] truncate">
-                          {subject.description || "—"}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {subject.topics?.slice(0, 2).map((topic) => (
-                              <Badge key={topic} variant="secondary" className="text-xs">
-                                {topic}
-                              </Badge>
+                      <div className="space-y-2">
+                        <Label className="text-foreground/80 font-semibold">Education Level *</Label>
+                        <Select value={educationLevel} onValueChange={setEducationLevel}>
+                          <SelectTrigger className="bg-background/50 border-white/20 rounded-xl h-11">
+                            <SelectValue placeholder="Select education level" />
+                          </SelectTrigger>
+                          <SelectContent className="glassmorphism border-white/10">
+                            {educationLevels.map((level) => (
+                              <SelectItem key={level.id} value={level.name} className="rounded-lg">
+                                {level.name}
+                              </SelectItem>
                             ))}
-                            {subject.topics?.length > 2 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{subject.topics.length - 2}
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>{subject.teacher_count}</TableCell>
-                        <TableCell>
-                          <Switch
-                            checked={subject.is_active}
-                            onCheckedChange={() => toggleActive(subject.id, subject.is_active)}
-                          />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEdit(subject)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="description" className="text-foreground/80 font-semibold">Description</Label>
+                        <Textarea
+                          id="description"
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          placeholder="Brief description matching course material"
+                          rows={3}
+                          className="bg-background/50 border-white/20 focus:border-primary rounded-xl resize-none"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="icon" className="text-foreground/80 font-semibold">Icon</Label>
+                        <Input
+                          id="icon"
+                          value={icon}
+                          onChange={(e) => setIcon(e.target.value)}
+                          placeholder="Lucide icon name (Calc, Atom, Globe)"
+                          className="bg-background/50 border-white/20 rounded-xl"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="topics" className="text-foreground/80 font-semibold">Topics (comma-separated)</Label>
+                        <Textarea
+                          id="topics"
+                          value={topics}
+                          onChange={(e) => setTopics(e.target.value)}
+                          placeholder="Algebra, Geometry, Calculus"
+                          rows={2}
+                          className="bg-background/50 border-white/20 focus:border-primary rounded-xl resize-none"
+                        />
+                      </div>
+
+                      <div className="flex gap-3 pt-6 mt-6 border-t border-border/50">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => { setIsDialogOpen(false); resetForm(); }}
+                          className="flex-1 rounded-xl"
+                        >
+                          Cancel
+                        </Button>
+                        <Button type="submit" className="flex-[2] rounded-xl shadow-md" disabled={saving}>
+                          {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                          {editingSubject ? "Save Changes" : "Create Subject"}
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </motion.div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+              <Card className="bg-white/40 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-sm overflow-hidden group hover:bg-white/50 transition-all duration-300">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-4 rounded-xl bg-blue-500/10 ring-1 ring-blue-500/20 group-hover:scale-110 transition-transform">
+                      <BookOpen className="w-7 h-7 text-blue-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Total Subjects</p>
+                      <p className="text-3xl font-bold text-foreground mt-1">{subjects.length}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+            
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+              <Card className="bg-white/40 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-sm overflow-hidden group hover:bg-white/50 transition-all duration-300">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-4 rounded-xl bg-green-500/10 ring-1 ring-green-500/20 group-hover:scale-110 transition-transform">
+                      <BookOpen className="w-7 h-7 text-green-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Active Elements</p>
+                      <p className="text-3xl font-bold text-foreground mt-1">{subjects.filter(s => s.is_active).length}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+              <Card className="bg-white/40 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-sm overflow-hidden group hover:bg-white/50 transition-all duration-300">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-4 rounded-xl bg-purple-500/10 ring-1 ring-purple-500/20 group-hover:scale-110 transition-transform">
+                      <Users className="w-7 h-7 text-purple-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Total Teachers</p>
+                      <p className="text-3xl font-bold text-foreground mt-1">
+                        {subjects.reduce((sum, s) => sum + s.teacher_count, 0)}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+            <Card className="bg-white/40 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-sm">
+              <CardHeader className="border-b border-border/50 bg-muted/30">
+                <CardTitle className="font-bold flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-primary" />
+                  All Authorized Subjects
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {loading ? (
+                  <div className="flex items-center justify-center py-16">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                  </div>
+                ) : subjects.length === 0 ? (
+                  <div className="text-center py-16 text-muted-foreground">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                      <BookOpen className="w-8 h-8 text-primary opacity-50" />
+                    </div>
+                    <p className="text-lg font-medium">No subjects allocated.</p>
+                    <p className="text-sm opacity-80 mt-1">Populate subjects to enhance the education core.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader className="bg-muted/30">
+                        <TableRow className="hover:bg-transparent">
+                          <TableHead className="font-semibold px-6">Subject</TableHead>
+                          <TableHead className="font-semibold">Level</TableHead>
+                          <TableHead className="font-semibold">Topics</TableHead>
+                          <TableHead className="font-semibold text-center">Tutors</TableHead>
+                          <TableHead className="font-semibold text-center">Status</TableHead>
+                          <TableHead className="font-semibold text-right px-6">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <AnimatePresence>
+                          {subjects.map((subject, index) => (
+                            <motion.tr
+                              key={subject.id}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              exit={{ opacity: 0, x: 10 }}
+                              transition={{ delay: index * 0.03 }}
+                              className="group hover:bg-white/40 dark:hover:bg-white/5 transition-colors border-b border-border/40"
                             >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDelete(subject.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                              <TableCell className="font-medium px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold shadow-sm border border-primary/20">
+                                    {subject.name.charAt(0)}
+                                  </div>
+                                  <div>
+                                    <div className="text-base text-foreground font-semibold">{subject.name}</div>
+                                    <div className="text-xs text-muted-foreground truncate max-w-[200px]" title={subject.description || ""}>
+                                      {subject.description || "No description provided"}
+                                    </div>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="bg-background/50 border-primary/30 text-primary uppercase text-[10px] tracking-wide font-bold">
+                                  {subject.education_level || "Any"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1.5 max-w-[250px]">
+                                  {subject.topics?.slice(0, 2).map((topic) => (
+                                    <Badge key={topic} className="bg-secondary/20 text-secondary-foreground border-secondary/30 hover:bg-secondary/30 text-xs shadow-none">
+                                      {topic}
+                                    </Badge>
+                                  ))}
+                                  {subject.topics?.length > 2 && (
+                                    <Badge variant="outline" className="bg-background/50 border-border/50 text-xs text-muted-foreground shadow-none">
+                                      +{subject.topics.length - 2} more
+                                    </Badge>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <div className="inline-flex items-center justify-center min-w-[2rem] h-8 rounded-md bg-muted/50 text-foreground font-semibold px-2">
+                                  {subject.teacher_count}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <Switch
+                                  checked={subject.is_active}
+                                  onCheckedChange={() => toggleActive(subject.id, subject.is_active)}
+                                  className="data-[state=checked]:bg-green-500 shadow-sm"
+                                />
+                              </TableCell>
+                              <TableCell className="text-right px-6">
+                                <div className="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => handleEdit(subject)}
+                                    className="h-9 w-9 rounded-lg bg-background/50 hover:bg-primary/10 hover:text-primary hover:border-primary/30"
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => handleDelete(subject.id)}
+                                    className="h-9 w-9 rounded-lg bg-background/50 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </motion.tr>
+                          ))}
+                        </AnimatePresence>
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
       </div>
     </AdminDashboardLayout>
   );

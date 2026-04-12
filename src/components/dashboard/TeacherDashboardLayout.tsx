@@ -11,14 +11,17 @@ import {
   Clock,
   Menu,
   ChevronLeft,
-  FileCheck
+  FileCheck,
+  Bell
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { WelcomeOverlay } from "./WelcomeOverlay";
 import { TeacherOnboardingWrapper } from "@/components/auth/TeacherOnboardingWrapper";
+import { GlobalNotificationBell } from "@/components/notifications/GlobalNotificationBell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import logo from "@/assets/extraclasses-logo.webp";
 import { useToast } from "@/hooks/use-toast";
@@ -88,6 +91,9 @@ export function TeacherDashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <TeacherOnboardingWrapper>
       <div className="min-h-screen bg-muted/30">
+        {profile && (
+          <WelcomeOverlay userName={profile.full_name} role="Teacher" />
+        )}
         {/* Mobile Overlay */}
         {isMobile && isSidebarOpen && (
           <div 
@@ -233,7 +239,18 @@ export function TeacherDashboardLayout({ children }: DashboardLayoutProps) {
               />
               <span className="font-display font-bold text-sm text-primary">EXTRACLASSES</span>
             </div>
+            {/* Mobile Notification Bell */}
+            <div className="ml-auto">
+              <GlobalNotificationBell role="teacher" />
+            </div>
           </header>
+        )}
+
+        {/* Desktop Notification Bell */}
+        {!isMobile && (
+          <div className="fixed top-6 right-8 z-40">
+            <GlobalNotificationBell role="teacher" />
+          </div>
         )}
 
         {/* Main Content */}

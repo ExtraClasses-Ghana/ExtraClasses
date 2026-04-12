@@ -95,20 +95,24 @@ export function useAdminWithdrawals(
       setLoading(true);
       setError(null);
       
+      const rpcParams: Record<string, any> = {
+        limit_count: limit,
+        offset_count: offset,
+      };
+
+      if (filterStatus) rpcParams.filter_status = filterStatus;
+      if (filterMethod) rpcParams.filter_method = filterMethod;
+
       const { data, error: err } = await supabase.rpc(
-        'get_admin_withdrawals_list',
-        {
-          limit_count: limit,
-          offset_count: offset,
-          filter_status: filterStatus || null,
-          filter_method: filterMethod || null,
-        }
+        'get_admin_withdrawals_list' as any,
+        rpcParams as any
       );
 
       if (err) throw err;
       setWithdrawals((data as WithdrawalRequest[]) || []);
     } catch (err: Error | unknown) {
-      const error = err instanceof Error ? err : new Error(String(err));
+      const errorMsg = (err && typeof err === 'object' && 'message' in err) ? String(err.message) : String(err);
+      const error = err instanceof Error ? err : new Error(errorMsg);
       const message = error.message || 'Failed to fetch withdrawals';
       setError(message);
       toast({
@@ -153,6 +157,7 @@ export function useWithdrawalActions() {
   const approveWithdrawal = useCallback(
     async (withdrawalId: string, approvalNotes?: string) => {
       try {
+        // @ts-ignore
         const { data, error: err } = await supabase.rpc('approve_withdrawal', {
           withdrawal_id: withdrawalId,
           approval_notes: approvalNotes || null,
@@ -167,7 +172,8 @@ export function useWithdrawalActions() {
 
         return { success: true, data };
       } catch (err: Error | unknown) {
-        const error = err instanceof Error ? err : new Error(String(err));
+        const errorMsg = (err && typeof err === 'object' && 'message' in err) ? String(err.message) : String(err);
+      const error = err instanceof Error ? err : new Error(errorMsg);
         const message = error.message || 'Failed to approve withdrawal';
         toast({
           title: 'Error',
@@ -192,9 +198,10 @@ export function useWithdrawalActions() {
       }
 
       try {
+        // @ts-ignore
         const { data, error: err } = await supabase.rpc('reject_withdrawal', {
           withdrawal_id: withdrawalId,
-          rejection_reason: rejectionReason,
+          p_rejection_reason: rejectionReason,
         });
 
         if (err) throw err;
@@ -206,7 +213,8 @@ export function useWithdrawalActions() {
 
         return { success: true, data };
       } catch (err: Error | unknown) {
-        const error = err instanceof Error ? err : new Error(String(err));
+        const errorMsg = (err && typeof err === 'object' && 'message' in err) ? String(err.message) : String(err);
+      const error = err instanceof Error ? err : new Error(errorMsg);
         const message = error.message || 'Failed to reject withdrawal';
         toast({
           title: 'Error',
@@ -226,6 +234,7 @@ export function useWithdrawalActions() {
       referenceNumber?: string
     ) => {
       try {
+        // @ts-ignore
         const { data, error: err } = await supabase.rpc('process_withdrawal', {
           withdrawal_id: withdrawalId,
           payment_gateway: paymentGateway || null,
@@ -241,7 +250,8 @@ export function useWithdrawalActions() {
 
         return { success: true, data };
       } catch (err: Error | unknown) {
-        const error = err instanceof Error ? err : new Error(String(err));
+        const errorMsg = (err && typeof err === 'object' && 'message' in err) ? String(err.message) : String(err);
+      const error = err instanceof Error ? err : new Error(errorMsg);
         const message = error.message || 'Failed to process withdrawal';
         toast({
           title: 'Error',
@@ -257,6 +267,7 @@ export function useWithdrawalActions() {
   const completeWithdrawal = useCallback(
     async (withdrawalId: string, externalReference?: string) => {
       try {
+        // @ts-ignore
         const { data, error: err } = await supabase.rpc('complete_withdrawal', {
           withdrawal_id: withdrawalId,
           external_reference: externalReference || null,
@@ -271,8 +282,71 @@ export function useWithdrawalActions() {
 
         return { success: true, data };
       } catch (err: Error | unknown) {
-        const error = err instanceof Error ? err : new Error(String(err));
+        const errorMsg = (err && typeof err === 'object' && 'message' in err) ? String(err.message) : String(err);
+      const error = err instanceof Error ? err : new Error(errorMsg);
         const message = error.message || 'Failed to complete withdrawal';
+        toast({
+          title: 'Error',
+          description: message,
+          variant: 'destructive',
+        });
+        return { success: false, error: message };
+      }
+    },
+    [toast]
+  );
+
+  const updateWithdrawalStatus = useCallback(
+    async (withdrawalId: string, newStatus: string) => {
+      try {
+        const { error: err } = await (supabase as any)
+          .from('teacher_withdrawals')
+          .update({ status: newStatus })
+          .eq('id', withdrawalId);
+
+        if (err) throw err;
+
+        toast({
+          title: 'Success',
+          description: `Withdrawal status updated to ${newStatus}`,
+        });
+
+        return { success: true };
+      } catch (err: Error | unknown) {
+        const errorMsg = (err && typeof err === 'object' && 'message' in err) ? String(err.message) : String(err);
+        const error = err instanceof Error ? err : new Error(errorMsg);
+        const message = error.message || 'Failed to update withdrawal status';
+        toast({
+          title: 'Error',
+          description: message,
+          variant: 'destructive',
+        });
+        return { success: false, error: message };
+      }
+    },
+    [toast]
+  );
+  
+  const deleteWithdrawal = useCallback(
+    async (withdrawalId: string) => {
+      try {
+        const { error: err } = await supabase
+          .from('teacher_withdrawals')
+          .delete()
+          .eq('id', withdrawalId);
+
+        if (err) throw err;
+
+        toast({
+          title: 'Success',
+          description: 'Withdrawal request securely deleted.',
+        });
+
+        return { success: true };
+      } catch (err: Error | unknown) {
+        const errorMsg = (err && typeof err === 'object' && 'message' in err) ? String(err.message) : String(err);
+        const error = err instanceof Error ? err : new Error(errorMsg);
+        const message = error.message || 'Failed to delete withdrawal';
         toast({
           title: 'Error',
           description: message,
@@ -289,6 +363,8 @@ export function useWithdrawalActions() {
     rejectWithdrawal,
     processWithdrawal,
     completeWithdrawal,
+    updateWithdrawalStatus,
+    deleteWithdrawal,
   };
 }
 
@@ -304,15 +380,17 @@ export function useWithdrawalStats() {
       setLoading(true);
       setError(null);
 
+      // @ts-ignore
       const { data, error: err } = await supabase.rpc('get_withdrawal_statistics');
 
       if (err) throw err;
 
-      if (data && data.length > 0) {
-        setStats(data[0]);
+      if (data && (data as any[]).length > 0) {
+        setStats((data as any[])[0]);
       }
     } catch (err: Error | unknown) {
-      const error = err instanceof Error ? err : new Error(String(err));
+      const errorMsg = (err && typeof err === 'object' && 'message' in err) ? String(err.message) : String(err);
+      const error = err instanceof Error ? err : new Error(errorMsg);
       const message = error.message || 'Failed to fetch statistics';
       setError(message);
       toast({
@@ -362,18 +440,19 @@ export function useWithdrawalNotifications() {
       setError(null);
 
       const { data, error: err } = await supabase.rpc(
-        'get_admin_withdrawal_notifications',
+        'get_admin_withdrawal_notifications' as any,
         {
           admin_id: null,
           limit_count: 50,
           offset_count: 0,
-        }
+        } as any
       );
 
       if (err) throw err;
       setNotifications((data as WithdrawalNotification[]) || []);
     } catch (err: Error | unknown) {
-      const error = err instanceof Error ? err : new Error(String(err));
+      const errorMsg = (err && typeof err === 'object' && 'message' in err) ? String(err.message) : String(err);
+      const error = err instanceof Error ? err : new Error(errorMsg);
       const message = error.message || 'Failed to fetch notifications';
       setError(message);
       toast({
@@ -389,6 +468,7 @@ export function useWithdrawalNotifications() {
   const markAsRead = useCallback(
     async (notificationId: string) => {
       try {
+        // @ts-ignore
         const { error: err } = await supabase.rpc('mark_notification_read', {
           notification_id: notificationId,
         });
@@ -403,7 +483,8 @@ export function useWithdrawalNotifications() {
           )
         );
       } catch (err: Error | unknown) {
-        const error = err instanceof Error ? err : new Error(String(err));
+        const errorMsg = (err && typeof err === 'object' && 'message' in err) ? String(err.message) : String(err);
+      const error = err instanceof Error ? err : new Error(errorMsg);
         console.error('Failed to mark notification as read:', error);
       }
     },
@@ -446,6 +527,7 @@ export function useWithdrawalTrends(daysBack: number = 30) {
       setLoading(true);
       setError(null);
 
+      // @ts-ignore
       const { data, error: err } = await supabase.rpc('get_withdrawal_trends', {
         days_back: daysBack,
       });
@@ -453,7 +535,8 @@ export function useWithdrawalTrends(daysBack: number = 30) {
       if (err) throw err;
       setTrends((data as WithdrawalTrend[]) || []);
     } catch (err: Error | unknown) {
-      const error = err instanceof Error ? err : new Error(String(err));
+      const errorMsg = (err && typeof err === 'object' && 'message' in err) ? String(err.message) : String(err);
+      const error = err instanceof Error ? err : new Error(errorMsg);
       const message = error.message || 'Failed to fetch trends';
       setError(message);
       toast({

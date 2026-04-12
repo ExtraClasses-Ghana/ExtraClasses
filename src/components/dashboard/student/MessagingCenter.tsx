@@ -35,6 +35,7 @@ interface Conversation {
   partnerId: string;
   partnerName: string;
   partnerAvatar: string | null;
+  partnerPhone?: string | null;
   lastMessage: string;
   lastMessageTime: string;
   unreadCount: number;
@@ -125,7 +126,7 @@ export function MessagingCenter() {
     if (!user) return;
     try {
       await supabase
-        .from("user_presence")
+        .from("user_presence" as any)
         .upsert({
           user_id: user.id,
           is_online: isOnline,
@@ -156,7 +157,11 @@ export function MessagingCenter() {
           if (!conversationsMap.has(partnerId)) {
             conversationsMap.set(partnerId, []);
           }
-          conversationsMap.get(partnerId)!.push(msg);
+          
+          // Ensure nulls are strictly coerced into booleans cleanly
+          const cleanMsg: Message = { ...msg, is_read: msg.is_read || false };
+          
+          conversationsMap.get(partnerId)!.push(cleanMsg);
         });
 
         const convos: Conversation[] = await Promise.all(
@@ -167,7 +172,7 @@ export function MessagingCenter() {
             }
             const { data: profile } = await supabase
               .from("profiles")
-              .select("full_name, avatar_url")
+              .select("full_name, avatar_url, phone")
               .eq("user_id", partnerId)
               .maybeSingle();
 
@@ -179,6 +184,7 @@ export function MessagingCenter() {
               partnerId,
               partnerName: profile?.full_name || "Unknown",
               partnerAvatar: profile?.avatar_url,
+              partnerPhone: profile?.phone,
               lastMessage: msgs[0].content,
               lastMessageTime: msgs[0].created_at,
               unreadCount,
@@ -208,7 +214,7 @@ export function MessagingCenter() {
       if (!user) return;
       try {
         const { data } = await supabase
-          .from("user_blocks")
+          .from("user_blocks" as any)
           .select("user_id, blocked_user_id")
           .or(`user_id.eq.${user.id},blocked_user_id.eq.${user.id}`);
 
@@ -242,14 +248,14 @@ export function MessagingCenter() {
       .order("created_at", { ascending: true });
 
     if (data) {
-      setMessages(data);
+      setMessages(data.map((m: any) => ({ ...m, is_read: m.is_read || false })));
       
       // Mark messages as read
       await supabase
         .from("messages")
         .update({ is_read: true })
         .eq("sender_id", partnerId)
-        .eq("receiver_id", user?.id);
+        .eq("receiver_id", user?.id || "");
     }
   };
 
@@ -271,7 +277,11 @@ export function MessagingCenter() {
               selectedConversation &&
               (newMsg.sender_id === selectedConversation || newMsg.receiver_id === selectedConversation)
             ) {
-              setMessages(prev => [...prev, newMsg]);
+              setMessages(prev => {
+                // Avoid duplicating the optimistically sent message
+                if (prev.some(m => m.id === newMsg.id || (m.sender_id === newMsg.sender_id && m.content === newMsg.content && Math.abs(new Date(m.created_at).getTime() - new Date(newMsg.created_at).getTime()) < 5000))) return prev;
+                return [...prev, newMsg];
+              });
 
               // If the new message was sent TO the current user and chat is open, mark it read
               if (newMsg.receiver_id === user?.id && newMsg.sender_id === selectedConversation) {
@@ -279,7 +289,7 @@ export function MessagingCenter() {
                   .from("messages")
                   .update({ is_read: true })
                   .eq("id", newMsg.id)
-                  .catch(console.error);
+                  .then(({ error }) => { if (error) console.error(error); });
               }
             }
 
@@ -400,24 +410,37 @@ export function MessagingCenter() {
 
     const TTL_MS = 24 * 60 * 60 * 1000;
     const expiresAt = new Date(Date.now() + TTL_MS).toISOString();
+    const contentToSend = newMessage.trim();
+
+    // Optimistically update the UI to avoid requiring a refresh
+    const tempMessage: Message = {
+      id: crypto.randomUUID(),
+      sender_id: user?.id || "",
+      receiver_id: selectedConversation,
+      content: contentToSend,
+      is_read: false,
+      created_at: new Date().toISOString()
+    };
+
+    setMessages(prev => [...prev, tempMessage]);
+    setNewMessage("");
+    inputRef.current?.focus();
 
     const { error } = await supabase
       .from("messages")
       .insert({
-        sender_id: user?.id,
+        sender_id: user?.id || "",
         receiver_id: selectedConversation,
-        content: newMessage.trim(),
+        content: contentToSend,
         expires_at: expiresAt
       });
 
     if (!error) {
-      setNewMessage("");
-      inputRef.current?.focus();
       // Clear typing indicator
       await supabase
-        .from("typing_indicators")
+        .from("typing_indicators" as any)
         .delete()
-        .eq("sender_id", user?.id)
+        .eq("sender_id", user?.id || "")
         .eq("receiver_id", selectedConversation);
     }
   };
@@ -436,23 +459,23 @@ export function MessagingCenter() {
 
       // Insert typing indicator
       supabase
-        .from("typing_indicators")
+        .from("typing_indicators" as any)
         .insert({
-          sender_id: user?.id,
+          sender_id: user?.id || "",
           receiver_id: selectedConversation
         })
-        .then(() => {
+        .then(({ error }) => {
+          if (error) console.error(error);
           // Clear after 3 seconds
           typingTimeoutRef.current = setTimeout(() => {
             supabase
-              .from("typing_indicators")
+              .from("typing_indicators" as any)
               .delete()
-              .eq("sender_id", user?.id)
+              .eq("sender_id", user?.id || "")
               .eq("receiver_id", selectedConversation)
-              .catch(console.error);
+              .then(({ error: delError }) => { if (delError) console.error(delError); });
           }, 3000);
-        })
-        .catch(console.error);
+        });
     }
   };
 
@@ -469,13 +492,19 @@ export function MessagingCenter() {
   };
 
   const handleStartCall = () => {
-    setCallType("voice");
-    setShowCallModal(true);
+    if (selectedPartner?.partnerPhone) {
+      window.location.href = `tel:${selectedPartner.partnerPhone}`;
+    } else {
+      alert("This user has not registered a phone number for calls.");
+    }
   };
 
   const handleStartVideoCall = () => {
-    setCallType("video");
-    setShowVideoCallModal(true);
+    if (selectedPartner?.partnerPhone) {
+      window.location.href = `tel:${selectedPartner.partnerPhone}`;
+    } else {
+      alert("This user has not registered a phone number for calls.");
+    }
   };
 
   const handleClearChat = async (partnerId?: string) => {
@@ -502,8 +531,11 @@ export function MessagingCenter() {
     try {
       // Insert block record; ignore conflict if exists
       await supabase
-        .from("user_blocks")
+        .from("user_blocks" as any)
         .upsert({ user_id: user.id, blocked_user_id: partnerId }, { onConflict: "user_id,blocked_user_id" });
+
+      // Automatically clear chat history as requested
+      await handleClearChat(partnerId);
 
       // Remove conversation locally
       setConversations(prev => prev.filter(c => c.partnerId !== partnerId));
@@ -535,7 +567,7 @@ export function MessagingCenter() {
         .from("profiles")
         .select("user_id, full_name, avatar_url")
         .ilike("full_name", `%${query}%`)
-        .neq("user_id", user?.id)
+        .neq("user_id", user?.id || "")
         .limit(10);
 
       if (profiles) {
@@ -585,7 +617,9 @@ export function MessagingCenter() {
           partnerAvatar: result.avatar_url,
           lastMessage: "",
           lastMessageTime: new Date().toISOString(),
-          unreadCount: 0
+          unreadCount: 0,
+          isOnline: false,
+          isTyping: false
         }, ...prev]);
       }
     }

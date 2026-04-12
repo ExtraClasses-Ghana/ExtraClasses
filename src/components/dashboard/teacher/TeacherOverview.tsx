@@ -115,20 +115,24 @@ export function TeacherOverview() {
   }, [user]);
 
   const fetchDashboardData = async () => {
+    if (!user?.id) return;
+    
     try {
       const today = new Date().toISOString().split('T')[0];
 
       // Fetch upcoming sessions
-      const { data: sessions } = await supabase
+      const { data: sessionsRaw } = await supabase
         .from("sessions")
         .select("*")
-        .eq("teacher_id", user?.id)
+        .eq("teacher_id", user.id)
         .gte("session_date", today)
         .in("status", ["pending", "confirmed"])
         .order("session_date", { ascending: true })
         .limit(5);
 
-      if (sessions) {
+      const sessions = (sessionsRaw || []) as any[];
+
+      if (sessions && sessions.length > 0) {
         const sessionsWithStudents = await Promise.all(
           sessions.map(async (session) => {
             const { data: studentProfile } = await supabase
@@ -141,30 +145,40 @@ export function TeacherOverview() {
         );
         setUpcomingSessions(sessionsWithStudents);
       }
+      
+      // Fetch wallet adjustments
+      const { data: adjustments } = await supabase
+        .from("admin_wallet_adjustments")
+        .select("amount")
+        .eq("teacher_id", user.id);
+        
+      const adjustmentsTotal = ((adjustments as any[]) || []).reduce((sum, adj) => sum + Number(adj.amount), 0);
 
       // Fetch teacher profile stats
-      const { data: teacherProfile } = await supabase
+      const { data: teacherProfileRaw } = await supabase
         .from("teacher_profiles")
         .select("total_earnings, total_sessions, total_students, rating")
-        .eq("user_id", user?.id)
+        .eq("user_id", user.id)
         .maybeSingle();
+        
+      const teacherProfile = teacherProfileRaw as any;
 
       // Fetch upcoming/pending counts
       const { count: upcomingCount } = await supabase
         .from("sessions")
         .select("*", { count: "exact", head: true })
-        .eq("teacher_id", user?.id)
+        .eq("teacher_id", user.id)
         .gte("session_date", today)
         .eq("status", "confirmed");
 
       const { count: pendingCount } = await supabase
         .from("sessions")
         .select("*", { count: "exact", head: true })
-        .eq("teacher_id", user?.id)
+        .eq("teacher_id", user.id)
         .eq("status", "pending");
 
       setStats({
-        totalEarnings: Number(teacherProfile?.total_earnings) || 0,
+        totalEarnings: (Number(teacherProfile?.total_earnings) || 0) + adjustmentsTotal,
         totalSessions: teacherProfile?.total_sessions || 0,
         totalStudents: teacherProfile?.total_students || 0,
         averageRating: Number(teacherProfile?.rating) || 0,

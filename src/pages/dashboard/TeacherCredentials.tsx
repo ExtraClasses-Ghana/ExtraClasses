@@ -39,6 +39,7 @@ export default function TeacherCredentials() {
   const [deleteWarningOpen, setDeleteWarningOpen] = useState(false);
   const [selectedDocForDelete, setSelectedDocForDelete] = useState<VerificationDoc | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [teacherStatus, setTeacherStatus] = useState<string | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   useEffect(() => {
@@ -46,15 +47,27 @@ export default function TeacherCredentials() {
   }, [user]);
 
   const fetchDocuments = async () => {
+    if (!user?.id) return;
     try {
       const { data, error } = await supabase
         .from("verification_documents")
         .select("*")
-        .eq("teacher_id", user?.id)
+        .eq("teacher_id", user.id)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
       setDocuments(data || []);
+
+      // Fetch teacher profile status
+      const { data: profile } = await supabase
+        .from("teacher_profiles")
+        .select("verification_status")
+        .eq("user_id", user.id)
+        .maybeSingle();
+        
+      if (profile) {
+        setTeacherStatus(profile.verification_status);
+      }
     } catch (error) {
       console.error("Error fetching documents:", error);
     } finally {
@@ -242,9 +255,23 @@ export default function TeacherCredentials() {
     <TeacherDashboardLayout>
       <div className="space-y-6 max-w-4xl">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-display font-bold text-foreground">
-            My Credentials
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl lg:text-3xl font-display font-bold text-foreground">
+              My Credentials
+            </h1>
+            {teacherStatus === 'verified' && (
+              <Badge className="bg-green-500 hover:bg-green-600 text-white border-green-500 px-3 py-1 flex items-center shadow-sm">
+                <CheckCircle className="w-4 h-4 mr-1.5" />
+                Approved Teacher
+              </Badge>
+            )}
+            {teacherStatus === 'pending' && (
+              <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500 px-3 py-1 flex items-center shadow-sm">
+                <Clock className="w-4 h-4 mr-1.5" />
+                Pending Review
+              </Badge>
+            )}
+          </div>
           <p className="text-muted-foreground mt-1">
             View and manage your verification documents
           </p>

@@ -1,14 +1,12 @@
 import { useState, useEffect } from "react";
-
-// These are hardcoded since education_levels and education_sub_categories
-// need to be added to Supabase types. In a production environment, you would
-// fetch these from the database after updating the Supabase schema.
+import { supabase } from "@/integrations/supabase/client";
 
 export interface EducationLevel {
   id: string;
-  level_name: string;
-  description: string | null;
-  sort_order: number | null;
+  name: string;
+  slug: string;
+  description?: string | null;
+  position?: number;
 }
 
 export interface EducationSubCategory {
@@ -18,27 +16,71 @@ export interface EducationSubCategory {
   sort_order: number | null;
 }
 
-// Education Category: flat list for user selection
-export const EDUCATION_CATEGORIES = [
-  "Basic",
-  "JHS",
-  "SHS",
-  "College Of Healths",
-  "University",
-  "Cyber Secutity",
-  "Graphic Design",
-  "Web Design",
-] as const;
+// Global cached promise to avoid duplicate queries
+let cachedEducationLevelsPromise: Promise<EducationLevel[]> | null = null;
+let cachedEducationLevels: EducationLevel[] | null = null;
 
-export type EducationCategory = (typeof EDUCATION_CATEGORIES)[number];
+export function useEducationLevels() {
+  const [levels, setLevels] = useState<EducationLevel[]>(cachedEducationLevels || []);
+  const [loading, setLoading] = useState(!cachedEducationLevels);
+  const [error, setError] = useState<Error | null>(null);
 
-const EDUCATION_LEVELS: EducationLevel[] = EDUCATION_CATEGORIES.map((name, i) => ({
-  id: String(i + 1),
-  level_name: name,
-  description: null,
-  sort_order: i + 1,
-}));
+  useEffect(() => {
+    let isMounted = true;
 
+    async function fetchLevels() {
+      if (cachedEducationLevels) {
+        if (isMounted) {
+          setLevels(cachedEducationLevels);
+          setLoading(false);
+        }
+        return;
+      }
+
+      if (!cachedEducationLevelsPromise) {
+        cachedEducationLevelsPromise = (async () => {
+          const { data, error } = await (supabase as any)
+            .from('education_levels')
+            .select('*')
+            .order('position', { ascending: true });
+
+          if (error) {
+            throw new Error(error.message);
+          }
+
+          const fetchedLevels = data as EducationLevel[];
+          cachedEducationLevels = fetchedLevels;
+          return fetchedLevels;
+        })();
+      }
+
+      try {
+        const data = await cachedEducationLevelsPromise;
+        if (isMounted) {
+          setLevels(data);
+          setError(null);
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          setError(err);
+        }
+        cachedEducationLevelsPromise = null; // reset if error
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    fetchLevels();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  return { levels, loading, error };
+}
+
+// Keeping subcategories hardcoded for now until we have a database table for them
 const EDUCATION_SUB_CATEGORIES: EducationSubCategory[] = [
   { id: "1", category_name: "Nursing", description: "Nursing Programs", sort_order: 1 },
   { id: "2", category_name: "Midwifery", description: "Midwifery Programs", sort_order: 2 },
@@ -47,33 +89,12 @@ const EDUCATION_SUB_CATEGORIES: EducationSubCategory[] = [
   { id: "5", category_name: "Universities", description: "University Programs", sort_order: 5 },
 ];
 
-export function useEducationLevels() {
-  const [levels, setLevels] = useState<EducationLevel[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    // Simulate async fetch with hardcoded data
-    setLoading(true);
-    try {
-      setLevels(EDUCATION_LEVELS);
-    } catch (err) {
-      setError(err as Error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  return { levels, loading, error };
-}
-
 export function useEducationSubCategories() {
   const [categories, setCategories] = useState<EducationSubCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    // Simulate async fetch with hardcoded data
     setLoading(true);
     try {
       setCategories(EDUCATION_SUB_CATEGORIES);

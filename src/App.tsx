@@ -44,6 +44,8 @@ import AdminComplaints from "./pages/admin/AdminComplaints";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminNotifications from "./pages/admin/AdminNotifications";
+import AdminNewsTicker from "./pages/admin/AdminNewsTicker";
+import AdminCarousel from "./pages/admin/AdminCarousel";
 import AdminRequests from "./pages/admin/AdminRequests";
 import AdminTWR from "./pages/admin/AdminTWR";
 import AdminSessions from "./pages/admin/AdminSessions";
@@ -292,6 +294,22 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["admin"]}>
                   <AdminSettings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/news-ticker"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AdminNewsTicker />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/carousel"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AdminCarousel />
                 </ProtectedRoute>
               }
             />

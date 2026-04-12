@@ -52,6 +52,7 @@ export default function TeacherProfile() {
   }, [id]);
 
   const fetchTeacher = async () => {
+    if (!id) return;
     try {
       // Fetch teacher profile
       const { data: teacherProfile, error: teacherError } = await supabase
@@ -140,6 +141,10 @@ export default function TeacherProfile() {
     setIsBookingOpen(true);
   };
 
+  const handeReviewAdded = () => {
+    setTeacher(prev => prev ? { ...prev, reviews: prev.reviews + 1 } : null);
+  };
+
   const handleMessage = () => {
     if (!user) {
       toast({
@@ -218,6 +223,7 @@ export default function TeacherProfile() {
             teacherId={id || ""}
             averageRating={teacher.rating}
             totalReviews={teacher.reviews}
+            onReviewAdded={handeReviewAdded}
           />
         </div>
       </motion.div>

@@ -9,7 +9,8 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Trash2, Edit2, ArrowUp, ArrowDown } from 'lucide-react';
+import { Loader2, Plus, Trash2, Edit2, ArrowUp, ArrowDown, GraduationCap, BookOpen, Clock, Activity } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface EducationLevel {
   id: string;
@@ -276,426 +277,373 @@ export default function AdminEducationLevels() {
 
   return (
     <AdminDashboardLayout 
-      title="Education Levels" 
-      subtitle="Manage education levels and categories for teachers and students"
+      title="" 
+      subtitle=""
     >
-      <div className="space-y-6">
-        {/* Header with Add Button */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-foreground">Education Levels</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Create and manage education levels that appear throughout the platform
-            </p>
+      <div className="relative min-h-[85vh] p-6 -mx-6 -mt-6">
+        {/* Background elements for Premium Glassmorphic feel */}
+        <div className="absolute inset-0 bg-background/50 pointer-events-none z-0" />
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 blur-[120px] rounded-full pointer-events-none z-0 mix-blend-screen" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-blue-500/10 blur-[150px] rounded-full pointer-events-none z-0 mix-blend-screen" />
+
+        <div className="relative z-10 space-y-8">
+          
+          {/* Header Section */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 p-8 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-lg ring-1 ring-white/5">
+            <div>
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-3 mb-2"
+              >
+                <div className="p-3 rounded-xl bg-primary/20 ring-1 ring-primary/30">
+                  <GraduationCap className="w-6 h-6 text-primary" />
+                </div>
+                <h2 className="text-3xl font-display font-bold text-foreground bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+                  Education Levels
+                </h2>
+              </motion.div>
+              <motion.p 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="text-muted-foreground ml-16"
+              >
+                Manage the educational hierarchy syncing to Auth and the Find Teachers directory.
+              </motion.p>
+            </div>
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Button 
+                onClick={() => setIsDialogOpen(true)}
+                className="h-12 px-6 rounded-xl shadow-lg hover:shadow-primary/25 transition-all gap-2 bg-gradient-to-br from-primary to-primary/80"
+              >
+                <Plus className="w-5 h-5" />
+                Add New Level
+              </Button>
+            </motion.div>
           </div>
-          <Button 
-            onClick={() => setIsDialogOpen(true)}
-            className="flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add Level
-          </Button>
-        </div>
 
-        {/* Error State */}
-        {errorMsg && (
-          <Card className="border-destructive bg-destructive/5">
-            <CardContent className="pt-6">
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-semibold text-destructive mb-2">Failed to Load Education Levels</h4>
-                  <p className="text-sm text-destructive/80">{errorMsg}</p>
-                </div>
-                
-                <div className="bg-muted p-4 rounded-lg">
-                  <h5 className="font-medium mb-2">Quick Fix - Run this SQL in your Supabase Dashboard:</h5>
-                  <div className="bg-background p-3 rounded border text-xs font-mono overflow-x-auto">
-                    {`-- Create the education_levels table first
-CREATE TABLE IF NOT EXISTS public.education_levels (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL UNIQUE,
-  slug TEXT NOT NULL UNIQUE,
-  description TEXT DEFAULT '',
-  position INTEGER DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.education_levels ENABLE ROW LEVEL SECURITY;
-
--- Drop existing policies if they exist, then recreate
-DROP POLICY IF EXISTS "public select education levels" ON public.education_levels;
-DROP POLICY IF EXISTS "admins manage education levels" ON public.education_levels;
-
--- Allow public read access
-CREATE POLICY "public select education levels" ON public.education_levels
-  FOR SELECT USING (true);
-
--- Allow admin full access
-CREATE POLICY "admins manage education levels" ON public.education_levels
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE user_id = auth.uid() AND public.has_role(auth.uid(), 'admin'::public.app_role)
-    )
-  );
-
--- Insert sample data (only if table is empty)
-INSERT INTO public.education_levels (name, slug, description, position)
-SELECT * FROM (VALUES
-  ('Basic Education', 'basic-education', 'Primary education', 1),
-  ('Junior High School', 'junior-high-school', 'JHS level', 2),
-  ('Senior High School', 'senior-high-school', 'SHS level', 3)
-) AS v(name, slug, description, position)
-WHERE NOT EXISTS (SELECT 1 FROM public.education_levels LIMIT 1);`}
+          {/* Error State */}
+          {errorMsg && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
+              <div className="p-6 rounded-2xl border border-destructive/20 bg-destructive/5 backdrop-blur-md">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="flex items-center gap-2 font-semibold text-destructive mb-2 text-lg">
+                      <Activity className="w-5 h-5" />
+                      Failed to Load Education Levels
+                    </h4>
+                    <p className="text-destructive/80">{errorMsg}</p>
                   </div>
-                  <div className="flex gap-2 mt-2">
-                    <Button 
-                      onClick={() => {
-                        navigator.clipboard.writeText(`-- Create the education_levels table first
-CREATE TABLE IF NOT EXISTS public.education_levels (
+                  
+                  <div className="bg-background/50 p-4 rounded-xl border border-destructive/10">
+                    <h5 className="font-medium mb-2 text-sm">Quick Fix - Run this SQL in your Supabase Dashboard:</h5>
+                    <div className="bg-black/5 dark:bg-black/40 p-4 rounded-lg border border-border/50 text-xs font-mono overflow-x-auto whitespace-pre">
+                      {`CREATE TABLE IF NOT EXISTS public.education_levels (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL UNIQUE,
   slug TEXT NOT NULL UNIQUE,
   description TEXT DEFAULT '',
   position INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.education_levels ENABLE ROW LEVEL SECURITY;
-
--- Drop existing policies if they exist, then recreate
-DROP POLICY IF EXISTS "public select education levels" ON public.education_levels;
-DROP POLICY IF EXISTS "admins manage education levels" ON public.education_levels;
-
--- Allow public read access
-CREATE POLICY "public select education levels" ON public.education_levels
-  FOR SELECT USING (true);
-
--- Allow admin full access
-CREATE POLICY "admins manage education levels" ON public.education_levels
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE user_id = auth.uid() AND public.has_role(auth.uid(), 'admin'::public.app_role)
-    )
-  );
-
--- Insert sample data (only if table is empty)
-INSERT INTO public.education_levels (name, slug, description, position)
-SELECT * FROM (VALUES
-  ('Basic Education', 'basic-education', 'Primary education', 1),
-  ('Junior High School', 'junior-high-school', 'JHS level', 2),
-  ('Senior High School', 'senior-high-school', 'SHS level', 3)
-) AS v(name, slug, description, position)
-WHERE NOT EXISTS (SELECT 1 FROM public.education_levels LIMIT 1);`);
-                        toast({ title: 'Copied', description: 'Complete table creation SQL copied to clipboard' });
-                      }}
-                      variant="outline" 
-                      size="sm"
-                    >
-                      Copy Complete SQL
-                    </Button>
-                    <Button 
-                      onClick={() => {
-                        navigator.clipboard.writeText(`-- Complete table recreation (if table exists but is corrupted)
-DROP TABLE IF EXISTS public.education_levels CASCADE;
-
-CREATE TABLE public.education_levels (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL UNIQUE,
-  slug TEXT NOT NULL UNIQUE,
-  description TEXT DEFAULT '',
-  position INTEGER DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
-ALTER TABLE public.education_levels ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "public select education levels" ON public.education_levels
-  FOR SELECT USING (true);
-
-CREATE POLICY "admins manage education levels" ON public.education_levels
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE user_id = auth.uid() AND public.has_role(auth.uid(), 'admin'::public.app_role)
-    )
-  );
-
-INSERT INTO public.education_levels (name, slug, description, position) VALUES
-('Basic Education', 'basic-education', 'Primary education', 1),
-('Junior High School', 'junior-high-school', 'JHS level', 2),
-('Senior High School', 'senior-high-school', 'SHS level', 3);`);
-                        toast({ title: 'Copied', description: 'Table recreation SQL copied to clipboard' });
-                      }}
-                      variant="outline" 
-                      size="sm"
-                    >
-                      Copy Recreate SQL
-                    </Button>
+);`}
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex gap-2 flex-wrap">
-                  <Button 
-                    onClick={fetchLevels} 
-                    variant="outline" 
-                    size="sm"
-                    disabled={loading}
-                  >
+                  <Button onClick={fetchLevels} variant="outline" disabled={loading}>
                     {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Retry
+                    Retry Connection
                   </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </motion.div>
+          )}
 
-        {/* Loading State */}
-        {loading && !errorMsg && (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          {/* Loading State */}
+          {loading && !errorMsg && (
+            <div className="flex flex-col items-center justify-center py-24 space-y-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
+                <Loader2 className="w-12 h-12 text-primary animate-spin relative z-10" />
               </div>
-            </CardContent>
-          </Card>
-        )}
+              <p className="text-muted-foreground animate-pulse font-medium">Syncing database...</p>
+            </div>
+          )}
 
-        {/* Empty State */}
-        {!loading && !errorMsg && levels.length === 0 && (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Plus className="w-8 h-8 text-primary" />
+          {/* Empty State */}
+          {!loading && !errorMsg && levels.length === 0 && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+            >
+              <div className="flex flex-col items-center justify-center py-20 text-center bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl">
+                <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 ring-1 ring-primary/20 shadow-inner">
+                  <Plus className="w-10 h-10 text-primary" />
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">No Education Levels Yet</h3>
-                <p className="text-sm text-muted-foreground mb-6">
-                  Create your first education level to get started
+                <h3 className="text-2xl font-bold text-foreground mb-3">No Education Levels Yet</h3>
+                <p className="text-muted-foreground max-w-sm mb-8">
+                  Get started by defining the education hierarchy. This data dynamically powers teacher onboarding and search filters.
                 </p>
-                <Button onClick={() => setIsDialogOpen(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create First Level
+                <Button onClick={() => setIsDialogOpen(true)} size="lg" className="rounded-xl shadow-lg">
+                  <Plus className="w-5 h-5 mr-2" />
+                  Create Your First Level
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </motion.div>
+          )}
 
-        {/* Education Levels Grid */}
-        {!loading && levels.length > 0 && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {levels.map((level) => (
-              <Card key={level.id} className="hover:shadow-lg transition-shadow">
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    {/* Title */}
-                    <div>
-                      <h3 className="text-lg font-semibold text-foreground break-words">
-                        {level.name}
-                      </h3>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Slug: {level.slug}
-                      </p>
-                    </div>
-
-                    {/* Description */}
-                    {level.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {level.description}
-                      </p>
-                    )}
-
-                    {/* Metadata */}
-                    <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
-                      <span>
-                        {level.created_at ? new Date(level.created_at).toLocaleDateString() : ''}
-                      </span>
-                      <span className="font-medium bg-primary/10 px-2 py-1 rounded">
-                        Order: {level.position || 0}
-                      </span>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex flex-col gap-2 pt-2">
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openEditDialog(level)}
-                          className="flex-1 flex items-center justify-center gap-1"
-                          disabled={isSaving}
-                        >
-                          <Edit2 className="w-4 h-4" />
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => setConfirmDeleteId(level.id)}
-                          className="flex items-center justify-center gap-1"
-                          disabled={isSaving}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+          {/* Education Levels Grid (Modern Cards) */}
+          {!loading && levels.length > 0 && (
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              <AnimatePresence>
+                {levels.map((level, i) => (
+                  <motion.div
+                    key={level.id}
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.3, delay: i * 0.05 }}
+                  >
+                    <div className="group relative flex flex-col justify-between h-full p-6 rounded-2xl bg-white/40 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+                      {/* Decorative Background gradient */}
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full transition-transform duration-500 group-hover:scale-150" />
                       
-                      {/* Reorder Buttons */}
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleMoveUp(level.id)}
-                          className="flex-1 flex items-center justify-center gap-1"
-                          disabled={isSaving || levels.findIndex(l => l.id === level.id) === 0}
-                          title="Move up in order"
-                        >
-                          <ArrowUp className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleMoveDown(level.id)}
-                          className="flex-1 flex items-center justify-center gap-1"
-                          disabled={isSaving || levels.findIndex(l => l.id === level.id) === levels.length - 1}
-                          title="Move down in order"
-                        >
-                          <ArrowDown className="w-4 h-4" />
-                        </Button>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20">
+                              <BookOpen className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-bold text-foreground break-words leading-tight">
+                                {level.name}
+                              </h3>
+                              <Badge variant="secondary" className="mt-1 text-[10px] font-mono tracking-wider opacity-70">
+                                /{level.slug}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+
+                        {level.description && (
+                          <p className="text-sm text-foreground/70 mb-6 line-clamp-3 leading-relaxed">
+                            {level.description}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="relative z-10 mt-auto pt-6">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground/80 mb-4 px-1">
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5" />
+                            {level.created_at ? new Date(level.created_at).toLocaleDateString() : 'New'}
+                          </div>
+                          <div className="font-semibold px-2.5 py-1 rounded-md bg-muted/50 border border-border/50">
+                            Order: {level.position || 0}
+                          </div>
+                        </div>
+
+                        {/* Modern Action Bar */}
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => openEditDialog(level)}
+                            className="flex-1 bg-white/50 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/10"
+                            disabled={isSaving}
+                          >
+                            <Edit2 className="w-4 h-4 mr-2" />
+                            Edit
+                          </Button>
+                          
+                          <div className="flex items-center gap-1 bg-muted/30 dark:bg-muted/10 rounded-md p-1 border border-border/30">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 hover:bg-background shadow-sm"
+                              onClick={() => handleMoveUp(level.id)}
+                              disabled={isSaving || i === 0}
+                            >
+                              <ArrowUp className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 hover:bg-background shadow-sm"
+                              onClick={() => handleMoveDown(level.id)}
+                              disabled={isSaving || i === levels.length - 1}
+                            >
+                              <ArrowDown className="w-4 h-4" />
+                            </Button>
+                          </div>
+
+                          <Button
+                            size="icon"
+                            variant="destructive"
+                            className="h-10 w-10 shrink-0 opacity-80 hover:opacity-100 transition-opacity"
+                            onClick={() => setConfirmDeleteId(level.id)}
+                            disabled={isSaving}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {/* Create Dialog */}
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogContent className="sm:max-w-[480px] rounded-2xl overflow-hidden glassmorphism-dialog border-white/10 shadow-2xl">
+              <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-primary to-blue-600" />
+              <DialogHeader className="pt-4 px-2">
+                <DialogTitle className="text-2xl font-display font-bold">Add Education Level</DialogTitle>
+                <p className="text-sm text-muted-foreground">Add a new tier to the global education platform</p>
+              </DialogHeader>
+              <div className="space-y-6 py-4 px-2">
+                <div className="space-y-3">
+                  <Label htmlFor="name" className="text-sm font-semibold">Track Name *</Label>
+                  <Input
+                    id="name"
+                    className="h-12 rounded-xl bg-background/50 border-white/20 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/50"
+                    placeholder="e.g., High School, University"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-3">
+                  <Label htmlFor="description" className="text-sm font-semibold">Description</Label>
+                  <Textarea
+                    id="description"
+                    className="rounded-xl min-h-[100px] bg-background/50 border-white/20 focus:ring-primary/20 transition-all resize-none placeholder:text-muted-foreground/50"
+                    placeholder="Brief description to help teachers and students"
+                    value={newDescription}
+                    onChange={(e) => setNewDescription(e.target.value)}
+                  />
+                </div>
+              </div>
+              <DialogFooter className="px-2 pb-2">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setIsDialogOpen(false)}
+                  disabled={isSaving}
+                  className="rounded-xl"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleCreate}
+                  disabled={isSaving || !newName.trim()}
+                  className="rounded-xl px-8 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary"
+                >
+                  {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
+                  Create Track
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-[480px] rounded-2xl overflow-hidden glassmorphism-dialog border-white/10 shadow-2xl">
+               <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-primary to-blue-600" />
+              <DialogHeader className="pt-4 px-2">
+                <DialogTitle className="text-2xl font-display font-bold">Edit Level</DialogTitle>
+                <p className="text-sm text-muted-foreground">Modify the details of this education track</p>
+              </DialogHeader>
+              <div className="space-y-6 py-4 px-2">
+                <div className="space-y-3">
+                  <Label htmlFor="edit-name" className="text-sm font-semibold">Name *</Label>
+                  <Input
+                    id="edit-name"
+                    className="h-12 rounded-xl bg-background/50 border-white/20 focus:ring-primary/20 transition-all"
+                    placeholder="e.g., High School, University"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-3">
+                  <Label htmlFor="edit-description" className="text-sm font-semibold">Description</Label>
+                  <Textarea
+                    id="edit-description"
+                    className="rounded-xl min-h-[100px] bg-background/50 border-white/20 focus:ring-primary/20 transition-all resize-none"
+                    placeholder="Brief description of this education level"
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                  />
+                </div>
+              </div>
+              <DialogFooter className="px-2 pb-2">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setIsEditDialogOpen(false)}
+                  disabled={isSaving}
+                  className="rounded-xl"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleUpdate}
+                  disabled={isSaving || !editName.trim()}
+                  className="rounded-xl px-8"
+                >
+                  {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Edit2 className="w-4 h-4 mr-2" />}
+                  Save Changes
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog open={!!confirmDeleteId} onOpenChange={(open) => {
+            if (!open) setConfirmDeleteId(null);
+          }}>
+            <AlertDialogContent className="rounded-3xl border-white/10 shadow-2xl glassmorphism-dialog overflow-hidden">
+              <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-red-500 to-rose-600" />
+              <AlertDialogHeader className="pt-4">
+                <AlertDialogTitle className="text-2xl font-bold flex items-center gap-2">
+                  <div className="p-2 rounded-full bg-red-500/10 text-red-500">
+                    <Trash2 className="w-5 h-5" />
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Create Dialog */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Add Education Level</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name *</Label>
-                <Input
-                  id="name"
-                  placeholder="e.g., High School, University"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Brief description of this education level"
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  rows={3}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button 
-                variant="outline" 
-                onClick={() => setIsDialogOpen(false)}
-                disabled={isSaving}
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleCreate}
-                disabled={isSaving || !newName.trim()}
-              >
-                {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Create
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Edit Dialog */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Edit Education Level</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-name">Name *</Label>
-                <Input
-                  id="edit-name"
-                  placeholder="e.g., High School, University"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-description">Description</Label>
-                <Textarea
-                  id="edit-description"
-                  placeholder="Brief description of this education level"
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  rows={3}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button 
-                variant="outline" 
-                onClick={() => setIsEditDialogOpen(false)}
-                disabled={isSaving}
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleUpdate}
-                disabled={isSaving || !editName.trim()}
-              >
-                {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Save Changes
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={!!confirmDeleteId} onOpenChange={(open) => {
-          if (!open) setConfirmDeleteId(null);
-        }}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Education Level?</AlertDialogTitle>
-            </AlertDialogHeader>
-            <p className="text-sm text-muted-foreground">
-              This action cannot be undone. The education level will be permanently deleted.
-            </p>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  if (confirmDeleteId) {
-                    handleDelete(confirmDeleteId);
-                  }
-                }}
-                disabled={isSaving}
-                className="bg-destructive hover:bg-destructive/90"
-              >
-                {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+                  Delete Track?
+                </AlertDialogTitle>
+              </AlertDialogHeader>
+              <p className="text-muted-foreground mt-4 leading-relaxed">
+                This action is permanent and cannot be undone. Are you absolutely sure you want to remove this education level from the entire platform? It may affect existing users.
+              </p>
+              <AlertDialogFooter className="mt-8 gap-3 sm:gap-2">
+                <AlertDialogCancel className="rounded-xl" disabled={isSaving}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => confirmDeleteId && handleDelete(confirmDeleteId)}
+                  disabled={isSaving}
+                  className="rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white border-0 shadow-lg"
+                >
+                  {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  Yes, Delete Level
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
     </AdminDashboardLayout>
   );
 }
+// Add a simple Badge component fallback directly since it's not imported
+const Badge = ({ children, className, variant = 'default' }: any) => {
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${className}`}>
+      {children}
+    </span>
+  );
+};
+

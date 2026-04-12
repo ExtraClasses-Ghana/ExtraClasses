@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import {
   Select,
   SelectContent,
@@ -21,7 +22,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, Smartphone, History, CheckCircle, Clock, Loader2, Send } from "lucide-react";
+import { Wallet, Smartphone, History, CheckCircle, Clock, Loader2, Send, ArrowUpRight, TrendingUp } from "lucide-react";
+
 // Remote logos provided by product team
 const mtnLogoUrl = "https://momodeveloper.mtn.com/content/momo_mtna.png";
 const telecelLogoUrl = "https://www.telecel.com.gh/img/Telecel-Icon-Red.png";
@@ -30,9 +32,9 @@ const airtelTigoLogoUrl = "https://download.logo.wine/logo/Airtel_Uganda/Airtel_
 type WithdrawalStatus = "pending" | "withdrawing" | "processing" | "paid";
 
 const NETWORKS = [
-  { id: "mtn", label: "MTN Mobile Money", logo: mtnLogoUrl },
-  { id: "telecel", label: "Telecel (Vodafone) Cash", logo: telecelLogoUrl },
-  { id: "airtel", label: "AirtelTigo", logo: airtelTigoLogoUrl },
+  { id: "mtn", label: "MTN Mobile Money", logo: mtnLogoUrl, color: "from-yellow-400 to-yellow-500" },
+  { id: "telecel", label: "Telecel Cash", logo: telecelLogoUrl, color: "from-red-500 to-red-600" },
+  { id: "airtel", label: "AirtelTigo", logo: airtelTigoLogoUrl, color: "from-blue-500 to-blue-600" },
 ] as const;
 
 const networkMap = Object.fromEntries(NETWORKS.map((n) => [n.id, n])) as Record<
@@ -68,18 +70,32 @@ function StatusBadge({ status }: { status: WithdrawalStatus }) {
   };
   const { label, className, icon } = config[status] ?? config.pending;
   return (
-    <Badge variant="outline" className={className}>
+    <Badge variant="outline" className={`transition-all duration-300 ${className}`}>
       <span className="mr-1">{icon}</span>
       {label}
     </Badge>
   );
 }
 
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 100 } }
+};
+
 export default function TeacherWithdrawals() {
   const { profile } = useAuth();
   const [amount, setAmount] = useState(0);
   const [method] = useState("mobile_money");
-  const [accountDetails, setAccountDetails] = useState("");
   const [mobileProvider, setMobileProvider] = useState("mtn");
   const [mobileNumber, setMobileNumber] = useState("");
   const [requests, setRequests] = useState<any[]>([]);
@@ -90,7 +106,7 @@ export default function TeacherWithdrawals() {
   const fetchRequests = async () => {
     if (!profile?.user_id) return;
     const { data } = await supabase
-      .from("teacher_withdrawals")
+      .from("teacher_withdrawals" as any)
       .select("*")
       .eq("teacher_id", profile.user_id)
       .order("created_at", { ascending: false });
@@ -110,14 +126,21 @@ export default function TeacherWithdrawals() {
       const totalRevenue = (completedSessions || []).reduce((sum, s) => sum + Number(s.amount), 0);
 
       const { data: withdrawals } = await supabase
-        .from("teacher_withdrawals")
+        .from("teacher_withdrawals" as any)
         .select("amount, status")
         .eq("teacher_id", profile.user_id)
         .in("status", ["paid", "processing", "withdrawing", "pending"]);
 
-      const totalWithdrawn = (withdrawals || []).reduce((sum, w) => sum + Number(w.amount), 0);
+      const totalWithdrawn = (withdrawals || []).reduce((sum, w: any) => sum + Number(w.amount), 0);
+      
+      const { data: adjustments } = await supabase
+        .from("admin_wallet_adjustments")
+        .select("amount")
+        .eq("teacher_id", profile.user_id);
+      
+      const totalAdjustments = (adjustments || []).reduce((sum, a) => sum + Number(a.amount), 0);
 
-      setAvailableBalance(Math.max(0, totalRevenue - totalWithdrawn));
+      setAvailableBalance(Math.max(0, totalRevenue + totalAdjustments - totalWithdrawn));
     } catch (e) {
       console.error("Error fetching balance:", e);
       setAvailableBalance(0);
@@ -148,7 +171,7 @@ export default function TeacherWithdrawals() {
       )
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    return () => { supabase.removeChannel(channel); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.user_id]);
 
@@ -158,12 +181,9 @@ export default function TeacherWithdrawals() {
     if (amount > balance) return;
     setLoading(true);
     try {
-      const account_details =
-        method === "mobile_money"
-          ? JSON.stringify({ provider: mobileProvider, number: mobileNumber })
-          : accountDetails;
+      const account_details = JSON.stringify({ provider: mobileProvider, number: mobileNumber });
 
-      await supabase.from("teacher_withdrawals").insert([
+      await supabase.from("teacher_withdrawals" as any).insert([
         {
           teacher_id: profile.user_id,
           amount,
@@ -183,7 +203,6 @@ export default function TeacherWithdrawals() {
       ]);
 
       setAmount(0);
-      setAccountDetails("");
       setMobileNumber("");
       setMobileProvider("mtn");
     } catch (err) {
@@ -201,204 +220,236 @@ export default function TeacherWithdrawals() {
 
   return (
     <TeacherDashboardLayout>
-      <div className="max-w-3xl mx-auto space-y-6 sm:space-y-8 px-4 sm:px-6 py-4 sm:py-6">
-        {/* Page header */}
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Withdrawals</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1">
-            Request payouts from your earnings. We process withdrawals to your Mobile Money account.
-          </p>
-        </div>
-
-        {/* Request withdrawal card */}
-        <Card className="overflow-hidden border-2 shadow-sm bg-card">
-          <div className="bg-gradient-to-br from-primary/5 via-transparent to-primary/10 dark:from-primary/10 dark:to-transparent">
-            <CardHeader className="pb-4 px-4 sm:px-6">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Wallet className="h-6 w-6" />
-                </div>
-                <div className="min-w-0">
-                  <CardTitle className="text-lg sm:text-xl">Request withdrawal</CardTitle>
-                  <CardDescription className="text-sm">
-                    Choose amount and Mobile Money details. Admin will review and process your request.
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-          </div>
-          <CardContent className="space-y-6 pt-6 px-4 sm:px-6">
-            {/* Available balance */}
-            <div className="rounded-lg border bg-muted/30 px-3 sm:px-4 py-3 flex flex-wrap items-center justify-between gap-2">
-              <span className="text-sm font-medium text-muted-foreground">Available balance</span>
-              {balanceLoading ? (
-                <span className="text-sm text-muted-foreground">Loading…</span>
-              ) : (
-                <span className="text-base sm:text-lg font-semibold text-foreground tabular-nums">
-                  GH₵ {balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground -mt-4">
-              Available balance = earnings from completed sessions minus all withdrawal requests (pending, processing, or paid).
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="max-w-4xl mx-auto space-y-6 sm:space-y-8 px-4 sm:px-6 py-6 sm:py-8"
+      >
+        {/* Page Header */}
+        <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-display font-bold tracking-tight text-foreground bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+              Withdrawals
+            </h1>
+            <p className="text-muted-foreground mt-2 max-w-md">
+              Securely request payouts from your teaching earnings straight to your Mobile Money account.
             </p>
+          </div>
+        </motion.div>
 
-            {/* Amount */}
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount (GH₵)</Label>
-              <Input
-                id="amount"
-                type="number"
-                min={1}
-                step={1}
-                placeholder="e.g. 100"
-                value={amount || ""}
-                onChange={(e) => setAmount(Number(e.target.value) || 0)}
-                className="h-12 text-base font-medium"
-              />
-              {exceedsBalance && amount > 0 && (
-                <p className="text-sm text-destructive font-medium">
-                  Amount exceeds your available balance (GH₵ {balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}).
-                </p>
-              )}
-            </div>
-
-            {/* Mobile Money section */}
-            <div className="rounded-xl border bg-muted/30 p-3 sm:p-4 space-y-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <Smartphone className="h-4 w-4 text-primary" />
-                Mobile Money (MOMO)
-              </div>
-              <p className="text-xs text-muted-foreground -mt-2">
-                Select your network and enter the mobile number to receive funds.
-              </p>
-
-              {/* Network dropdown with PNG logos */}
-              <div className="space-y-2">
-                <Label>Network</Label>
-                <Select value={mobileProvider} onValueChange={setMobileProvider}>
-                  <SelectTrigger className="h-12 w-full rounded-lg border-2 bg-background px-3 sm:px-4 hover:border-primary/50 transition-colors min-w-0">
-                    <span className="flex items-center gap-2 sm:gap-3 min-w-0">
-                      {selectedNetwork && (
-                        <>
-                          <img
-                            src={selectedNetwork.logo}
-                            alt=""
-                            className="h-6 w-6 sm:h-7 sm:w-7 object-contain flex-shrink-0"
-                          />
-                          <span className="font-medium truncate">{selectedNetwork.label}</span>
-                        </>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column: Form & Balance */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Balance Card Widget */}
+            <motion.div variants={itemVariants}>
+              <Card className="overflow-hidden border-0 shadow-lg relative bg-white/5 dark:bg-black/20 backdrop-blur-3xl">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent pointer-events-none" />
+                <CardContent className="p-8 relative z-10">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                        <Wallet className="w-4 h-4 text-primary" /> Available Balance
+                      </p>
+                      {balanceLoading ? (
+                        <div className="h-10 w-32 bg-primary/10 animate-pulse rounded-md" />
+                      ) : (
+                        <motion.h2 
+                          initial={{ scale: 0.9, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          className="text-4xl font-display font-bold text-foreground tracking-tight"
+                        >
+                          GH₵ {balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </motion.h2>
                       )}
-                    </span>
-                  </SelectTrigger>
-                  <SelectContent className="min-w-[280px]">
-                    {NETWORKS.map((network) => (
-                      <SelectItem
-                        key={network.id}
-                        value={network.id}
-                        className="py-3 cursor-pointer focus:bg-primary/10"
-                      >
-                        <span className="flex items-center gap-3">
-                          <img
-                            src={network.logo}
-                            alt=""
-                            className="h-6 w-6 object-contain flex-shrink-0"
-                          />
-                          <span>{network.label}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                    </div>
+                    <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/30">
+                      <TrendingUp className="w-8 h-8 text-white" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-4 opacity-80">
+                    Calculated from completed sessions minus all pending and paid withdrawals.
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-              {/* Mobile number */}
-              <div className="space-y-2">
-                <Label htmlFor="mobile">Mobile number</Label>
-                <Input
-                  id="mobile"
-                  type="tel"
-                  placeholder="e.g. 0244123456"
-                  value={mobileNumber}
-                  onChange={(e) => setMobileNumber(e.target.value)}
-                  className="h-12"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Enter the number with leading zero (10 digits).
-                </p>
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter className="border-t bg-muted/20 pt-6 px-4 sm:px-6">
-            <Button
-              onClick={submitRequest}
-              disabled={!canSubmit}
-              className="w-full sm:w-auto h-11 px-6 font-medium gap-2 min-h-[44px]"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Sending request…
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4" />
-                  Send withdrawal request
-                </>
-              )}
-            </Button>
-          </CardFooter>
-        </Card>
-
-        {/* Request history */}
-        <Card>
-          <CardHeader className="px-4 sm:px-6">
-            <div className="flex items-center gap-2">
-              <History className="h-5 w-5 text-muted-foreground shrink-0" />
-              <CardTitle className="text-base sm:text-lg">Your requests</CardTitle>
-            </div>
-            <CardDescription className="text-sm">Recent withdrawal requests and their status.</CardDescription>
-          </CardHeader>
-          <CardContent className="px-4 sm:px-6">
-            {requests.length === 0 ? (
-              <div className="rounded-xl border border-dashed bg-muted/30 py-8 sm:py-12 text-center px-4">
-                <Wallet className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-60" />
-                <p className="text-sm font-medium text-muted-foreground">No withdrawal requests yet</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Submit a request above when you’re ready to withdraw.
-                </p>
-              </div>
-            ) : (
-              <ul className="space-y-3">
-                {requests.map((r) => (
-                  <li
-                    key={r.id}
-                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 rounded-lg border bg-card p-3 sm:p-4 hover:bg-muted/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                      <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary font-semibold text-xs sm:text-sm">
+            {/* Request Card */}
+            <motion.div variants={itemVariants}>
+              <Card className="border shadow-lg bg-card/60 backdrop-blur-md transition-all duration-300 hover:shadow-xl hover:border-primary/20">
+                <CardHeader className="border-b bg-muted/20 px-6 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+                      <ArrowUpRight className="h-5 w-5" />
+                    </div>
+                    <CardTitle className="text-xl">Request Payout</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  
+                  {/* Amount Input */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-semibold text-foreground/80">Withdrawal Amount (GH₵)</Label>
+                    <div className="relative group">
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium group-focus-within:text-primary transition-colors">
                         GH₵
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-foreground">
-                          GH₵ {Number(r.amount).toFixed(2)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {r.method === "mobile_money" ? "Mobile Money" : r.method} •{" "}
-                          {new Date(r.created_at).toLocaleString()}
-                        </p>
+                      <Input
+                        type="number"
+                        min={1}
+                        step={1}
+                        placeholder="ENTER AMOUNT"
+                        value={amount || ""}
+                        onChange={(e) => setAmount(Number(e.target.value) || 0)}
+                        className="pl-12 h-14 text-lg font-bold bg-background/50 border-input transition-all duration-300 focus:ring-2 focus:ring-primary/20"
+                      />
+                    </div>
+                    <AnimatePresence>
+                      {exceedsBalance && amount > 0 && (
+                        <motion.p 
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="text-sm text-destructive font-medium"
+                        >
+                          Amount exceeds your available balance!
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Network Settings */}
+                  <div className="space-y-4 pt-2">
+                    <Label className="text-sm font-semibold text-foreground/80 flex items-center gap-2">
+                      <Smartphone className="w-4 h-4 text-primary" /> Destination Account
+                    </Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      
+                      <div className="space-y-2">
+                        <Select value={mobileProvider} onValueChange={setMobileProvider}>
+                          <SelectTrigger className="h-14 font-medium bg-background/50 border-input hover:border-primary/40 transition-colors">
+                            <span className="flex items-center gap-3">
+                              {selectedNetwork && (
+                                <>
+                                  <img src={selectedNetwork.logo} alt="" className="h-6 w-6 object-contain" />
+                                  <span className="truncate">{selectedNetwork.label}</span>
+                                </>
+                              )}
+                            </span>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {NETWORKS.map((network) => (
+                              <SelectItem key={network.id} value={network.id} className="py-3">
+                                <span className="flex items-center gap-3">
+                                  <img src={network.logo} alt="" className="h-6 w-6 object-contain" />
+                                  <span className="font-medium">{network.label}</span>
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
+
+                      <div className="space-y-2">
+                        <Input
+                          type="tel"
+                          placeholder="Mobile Number (e.g. 024XXXXXXX)"
+                          value={mobileNumber}
+                          onChange={(e) => setMobileNumber(e.target.value)}
+                          className={`h-14 font-medium transition-all duration-300 ${mobileNumber.length > 0 && !isValidNumber ? "border-destructive focus-visible:ring-destructive" : "bg-background/50 border-input focus:ring-primary/20"}`}
+                        />
+                      </div>
+
                     </div>
-                    <div className="shrink-0">
-                      <StatusBadge status={r.status as WithdrawalStatus} />
+                  </div>
+
+                </CardContent>
+                <CardFooter className="px-6 py-5 bg-muted/10 border-t">
+                  <Button
+                    onClick={submitRequest}
+                    disabled={!canSubmit}
+                    className="w-full h-14 text-base font-bold tracking-wide rounded-xl shadow-lg transition-all hover:-translate-y-1 hover:shadow-xl active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
+                  >
+                    {loading ? (
+                      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} className="mr-2">
+                        <Loader2 className="h-5 w-5" />
+                      </motion.div>
+                    ) : (
+                      <Send className="h-5 w-5 mr-2" />
+                    )}
+                    {loading ? "PROCESSING REQUEST..." : "SUBMIT WITHDRAWAL"}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </motion.div>
+          </div>
+
+          {/* Right Column: History */}
+          <motion.div variants={itemVariants} className="lg:col-span-1">
+            <Card className="h-full border shadow-lg bg-card/60 backdrop-blur-md flex flex-col">
+              <CardHeader className="border-b bg-muted/20 px-6 py-5">
+                <div className="flex items-center gap-2 text-primary">
+                  <History className="h-5 w-5" />
+                  <CardTitle className="text-xl">Recent History</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 p-0 overflow-y-auto max-h-[600px] styled-scrollbar">
+                {requests.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center p-8 text-center opacity-70">
+                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                      <Wallet className="h-8 w-8 text-muted-foreground" />
                     </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                    <p className="font-semibold text-foreground">No History Found</p>
+                    <p className="text-sm text-muted-foreground mt-1">Your recent withdrawals will appear here.</p>
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-border">
+                    <AnimatePresence>
+                      {requests.map((r, i) => (
+                        <motion.li
+                          key={r.id}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.05 }}
+                          className="p-5 hover:bg-muted/10 transition-colors cursor-default"
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="font-bold text-lg text-foreground tracking-tight">GH₵ {Number(r.amount).toFixed(2)}</span>
+                            <StatusBadge status={r.status as WithdrawalStatus} />
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+                            {r.method === "mobile_money" && (
+                              <img 
+                                src={
+                                  (() => {
+                                    try { return networkMap[JSON.parse(r.account_details || "{}").provider]?.logo || mtnLogoUrl; } 
+                                    catch { return mtnLogoUrl; }
+                                  })()
+                                } 
+                                alt="Network" 
+                                className="w-4 h-4 object-contain opacity-70"
+                              />
+                            )}
+                            <span className="truncate uppercase">
+                              {(() => {
+                                try { return JSON.parse(r.account_details || "{}").provider || "MOMO"; } 
+                                catch { return "MOMO (LEGACY)"; }
+                              })()}
+                            </span>
+                            <span>•</span>
+                            <span>{new Date(r.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          </div>
+                        </motion.li>
+                      ))}
+                    </AnimatePresence>
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </motion.div>
     </TeacherDashboardLayout>
   );
 }

@@ -78,7 +78,7 @@ export function Testimonials() {
       if (reviewStats && reviewStats.length > 0) {
         const avg = reviewStats.reduce((sum, r) => sum + r.rating, 0) / reviewStats.length;
         const satisfiedCount = reviewStats.filter(r => r.rating >= 4).length;
-        
+
         setStats({
           avgRating: Math.round(avg * 10) / 10,
           totalReviews: reviewStats.length,
@@ -151,7 +151,7 @@ export function Testimonials() {
             What Our <span className="text-secondary">Community</span> Says
           </h2>
           <p className="text-lg text-white/70">
-            Hear from students, parents, and teachers across Ghana who have 
+            Hear from students, parents, and teachers across Ghana who have
             experienced the ExtraClasses Ghana difference.
           </p>
         </motion.div>

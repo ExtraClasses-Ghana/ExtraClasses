@@ -39,8 +39,8 @@ export function HeroSection() {
 
   const filteredSubjects = searchQuery.trim()
     ? popularSubjects.filter(subject =>
-        subject.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      subject.toLowerCase().includes(searchQuery.toLowerCase())
+    )
     : [];
 
   const handleSearch = () => {
@@ -64,13 +64,13 @@ export function HeroSection() {
     <section className="relative min-h-screen flex flex-col overflow-hidden bg-muted/30">
       {/* Header with Background Image */}
       <div className="relative h-80 lg:h-96">
-        <img 
-          src={headerBackground} 
-          alt="Education background" 
+        <img
+          src={headerBackground}
+          alt="Education background"
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-white/75" />
-        
+
         {/* Header Content Overlay */}
         <div className="absolute inset-0 flex items-center justify-center">
           <motion.div
@@ -79,9 +79,9 @@ export function HeroSection() {
             transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="text-center"
           >
-            <img 
-              src="/logo-animate.gif" 
-              alt="ExtraClasses Ghana" 
+            <img
+              src="/logo-animate.gif"
+              alt="ExtraClasses Ghana"
               className="w-64 h-64 lg:w-80 lg:h-80 mx-auto object-contain drop-shadow-xl"
             />
           </motion.div>
@@ -122,8 +122,8 @@ export function HeroSection() {
               transition={{ duration: 0.6, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
               className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto lg:mx-0"
             >
-              Connect with qualified, verified tutors for personalized learning 
-              experiences. Whether online or in-person, find the perfect teacher 
+              Connect with qualified, verified tutors for personalized learning
+              experiences. Whether online or in-person, find the perfect teacher
               to help you achieve your academic goals.
             </motion.p>
 

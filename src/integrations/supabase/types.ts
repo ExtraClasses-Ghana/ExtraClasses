@@ -656,6 +656,107 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      admin_wallet_adjustments: {
+        Row: {
+          id: string
+          teacher_id: string
+          admin_id: string | null
+          amount: number
+          reason: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          teacher_id: string
+          admin_id?: string | null
+          amount: number
+          reason: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          teacher_id?: string
+          admin_id?: string | null
+          amount?: number
+          reason?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_wallet_adjustments_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "admin_wallet_adjustments_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          }
+        ]
+      }
+      carousels: {
+        Row: {
+          id: string
+          title: string
+          media_url: string
+          media_type: string
+          link_url: string | null
+          is_active: boolean
+          order_index: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          media_url: string
+          media_type: string
+          link_url?: string | null
+          is_active?: boolean
+          order_index?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          media_url?: string
+          media_type?: string
+          link_url?: string | null
+          is_active?: boolean
+          order_index?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      news_tickers: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
       }
       contact_messages: {
         Row: {

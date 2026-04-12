@@ -23,9 +23,10 @@ interface ReviewsSectionProps {
   teacherId: string;
   averageRating: number;
   totalReviews: number;
+  onReviewAdded?: () => void;
 }
 
-export function ReviewsSection({ teacherId, averageRating, totalReviews }: ReviewsSectionProps) {
+export function ReviewsSection({ teacherId, averageRating, totalReviews, onReviewAdded }: ReviewsSectionProps) {
   const { user, role } = useAuth();
   const { toast } = useToast();
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -155,6 +156,7 @@ export function ReviewsSection({ teacherId, averageRating, totalReviews }: Revie
           };
 
           setReviews((prev) => [formattedReview, ...prev]);
+          if (onReviewAdded) onReviewAdded();
           
           toast({
             title: "New review posted!",
@@ -209,7 +211,7 @@ export function ReviewsSection({ teacherId, averageRating, totalReviews }: Revie
         session_id: null,
         rating: newRating,
         comment: newComment.trim() || null,
-      });
+      } as any);
 
       if (error) throw error;
 

@@ -54,7 +54,7 @@ import {
 } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { EDUCATION_CATEGORIES } from "@/hooks/useEducationLevel";
+import { useEducationLevels } from "@/hooks/useEducationLevel";
 
 interface Subject {
   id: string;
@@ -63,6 +63,7 @@ interface Subject {
   icon: string | null;
   topics: string[];
   teacher_count: number;
+  education_level?: string | null;
 }
 
 const iconMap: Record<string, any> = {
@@ -140,14 +141,13 @@ const colorMap: Record<string, string> = {
   "Religious Studies (Christian)": "bg-blue-800/10 text-blue-900",
   "Religious Studies (Islamic)": "bg-green-800/10 text-green-900",
   "Religious and Moral Education": "bg-indigo-500/10 text-indigo-600",
-  "Robotics": "bg-orange-500/10 text-orange-600",
-  "Social Studies": "bg-orange-500/10 text-orange-600",
   "Spanish": "bg-red-500/10 text-red-600"
 };
 
 export default function Subjects() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedEducationLevel, setSelectedEducationLevel] = useState("All Levels");
+  const [selectedEducationLevel, setSelectedEducationLevel] = useState<string>("All Levels");
+  const { levels: educationLevels, loading: loadingLevels } = useEducationLevels();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -265,9 +265,9 @@ export default function Subjects() {
                     </SelectTrigger>
                     <SelectContent className="bg-white border-border z-50">
                       <SelectItem value="All Levels">All Levels</SelectItem>
-                      {EDUCATION_CATEGORIES.map((level) => (
-                        <SelectItem key={level} value={level}>
-                          {level}
+                      {!loadingLevels && educationLevels.map((level) => (
+                        <SelectItem key={level.id} value={level.name}>
+                          {level.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

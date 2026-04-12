@@ -94,22 +94,35 @@ export function EarningsAnalytics() {
   }, [user]);
 
   const fetchEarnings = async () => {
+    if (!user?.id) return;
+    
     try {
       // Get teacher profile stats
       const { data: teacherProfile } = await supabase
         .from("teacher_profiles")
         .select("total_earnings")
-        .eq("user_id", user?.id)
+        .eq("user_id", user.id)
         .maybeSingle();
 
       // Get completed sessions (earnings)
-      const { data: completedSessions } = await supabase
+      const { data: completedSessionsRaw } = await supabase
         .from("sessions")
         .select("id, amount, session_date, subject, status")
-        .eq("teacher_id", user?.id)
+        .eq("teacher_id", user.id)
         .eq("status", "completed")
         .order("session_date", { ascending: false })
         .limit(20);
+        
+      const completedSessions = (completedSessionsRaw || []) as any[];
+
+      // Get wallet adjustments
+      const { data: adjustmentsRaw } = await supabase
+        .from("admin_wallet_adjustments")
+        .select("id, amount, created_at, reason")
+        .eq("teacher_id", user.id)
+        .order("created_at", { ascending: false });
+        
+      const adjustments = (adjustmentsRaw || []) as any[];
 
       if (completedSessions) {
         const earningsData = completedSessions.map(session => ({
@@ -144,8 +157,33 @@ export function EarningsAnalytics() {
           })
           .reduce((sum, s) => sum + Number(s.amount), 0);
 
+        // Include adjustments into earnings history and calculations
+        let combinedEarnings = [...earningsData];
+        let totalAdjustments = 0;
+
+        if (adjustments) {
+          totalAdjustments = adjustments.reduce((sum, a) => sum + Number(a.amount), 0);
+          
+          const mappedAdjustments = adjustments.map(adj => ({
+            id: adj.id,
+            amount: Number(adj.amount),
+            created_at: adj.created_at,
+            session: {
+              subject: adj.amount < 0 ? `Debit: ${adj.reason}` : `Credit / Bonus: ${adj.reason}`,
+              session_date: adj.created_at
+            }
+          }));
+
+          combinedEarnings = [...combinedEarnings, ...mappedAdjustments]
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, 30);
+        }
+
+        setEarnings(combinedEarnings);
+        const sessionEarningsTotal = completedSessions.reduce((sum, s) => sum + Number(s.amount), 0);
+
         setStats({
-          totalEarnings: Number(teacherProfile?.total_earnings) || 0,
+          totalEarnings: sessionEarningsTotal + totalAdjustments,
           thisMonthEarnings,
           lastMonthEarnings,
           pendingPayouts: 0
@@ -163,17 +201,20 @@ export function EarningsAnalytics() {
     : 0;
 
   const handleExportPDF = async () => {
+    if (!user?.id) return;
+    
     try {
       setIsExporting(true);
 
       // Prepare data for PDF - get teacher name from profile
-      const { data: teacherProfile } = await supabase
+      const { data: profileData } = await supabase
         .from("profiles")
         .select("full_name")
-        .eq("user_id", user?.id)
+        .eq("user_id", user.id)
         .maybeSingle();
 
-      const teacherName = teacherProfile?.full_name || "Teacher";
+      const teacherProfileCast = profileData as any;
+      const teacherName = teacherProfileCast?.full_name || "Teacher";
 
       // Prepare earnings data for PDF
       const earningsForPDF = earnings.map(earning => ({
@@ -344,12 +385,12 @@ export function EarningsAnalytics() {
                   className="flex items-center justify-between p-4 rounded-xl border border-border hover:bg-muted/30 transition-colors"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="p-2 rounded-lg bg-green-100">
-                      <ArrowUpRight className="w-4 h-4 text-green-600" />
+                    <div className={`p-2 rounded-lg ${earning.amount >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
+                      <ArrowUpRight className={`w-4 h-4 ${earning.amount >= 0 ? 'text-green-600' : 'text-red-600'}`} />
                     </div>
                     <div>
                       <p className="font-medium">
-                        {earning.session?.subject || "Session"} Lesson
+                        {earning.session?.subject}
                       </p>
                       <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
                         <Calendar className="w-3.5 h-3.5" />
@@ -358,10 +399,12 @@ export function EarningsAnalytics() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-lg text-green-600">
-                      +GH₵{earning.amount.toFixed(0)}
+                    <p className={`font-semibold text-lg ${earning.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {earning.amount >= 0 ? '+' : ''}GH₵{earning.amount.toFixed(2)}
                     </p>
-                    <Badge className="bg-green-100 text-green-800">Completed</Badge>
+                    <Badge className={earning.amount >= 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                      {earning.amount >= 0 ? 'Completed' : 'Debited'}
+                    </Badge>
                   </div>
                 </motion.div>
               ))}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Mail, Lock, User, GraduationCap, Users, Phone, MapPin } from "lucide-react";
+import { X, Mail, Lock, User, GraduationCap, Users, Phone, MapPin, Eye, EyeOff, MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { EDUCATION_CATEGORIES } from "@/hooks/useEducationLevel";
+import { useEducationLevels } from "@/hooks/useEducationLevel";
 import logo from "@/assets/extraclasses-logo.webp";
 
 interface AuthModalProps {
@@ -43,6 +43,10 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
   const [selectedRole, setSelectedRole] = useState<AppRole>("student");
   const [educationCategory, setEducationCategory] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isVerificationPending, setIsVerificationPending] = useState(false);
+
+  const { levels: educationLevels, loading: loadingLevels } = useEducationLevels();
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
 
@@ -72,20 +76,27 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
         }
 
         const displayName = title ? `${title} ${fullName}` : fullName;
-        const { error } = await signUp(
+        const { error, data } = await signUp(
           email,
           password,
           displayName,
           selectedRole,
           educationCategory,
-          null
+          null,
+          phone.trim()
         );
         if (error) throw error;
-        toast({
-          title: "Account created!",
-          description: "Welcome to ExtraClasses Ghana.",
-        });
-        onClose();
+        
+        // Supabase often requires email verification before users can log in
+        if (data?.user?.identities && data.user.identities.length > 0) {
+           setIsVerificationPending(true);
+        } else {
+           toast({
+            title: "Account created!",
+            description: "Welcome to ExtraClasses Ghana.",
+          });
+          onClose();
+        }
       }
     } catch (error: any) {
       toast({
@@ -107,6 +118,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
     setRegion("");
     setSelectedRole("student");
     setEducationCategory("");
+    setIsVerificationPending(false);
   };
 
   const switchTab = (newTab: "login" | "signup") => {
@@ -187,6 +199,28 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
           </div>
 
           {/* Form */}
+          {isVerificationPending ? (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              className="p-8 text-center"
+            >
+              <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <MailCheck className="w-10 h-10 text-emerald-500" />
+              </div>
+              <h3 className="text-2xl font-display font-bold text-slate-800 mb-2">Check Your Email</h3>
+              <p className="text-slate-600 mb-8">
+                We've sent a verification link to <span className="font-semibold text-slate-800">{email}</span>. 
+                Please verify your email address to activate your account.
+              </p>
+              <Button 
+                onClick={onClose}
+                className="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white rounded-xl"
+              >
+                Okay, I'll check
+              </Button>
+            </motion.div>
+          ) : (
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             {tab === "signup" && (
               <>
@@ -265,13 +299,13 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                 <div className="space-y-2">
                   <Label htmlFor="educationCategory">Education Category *</Label>
                   <Select value={educationCategory} onValueChange={setEducationCategory}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your education category" />
+                    <SelectTrigger disabled={loadingLevels}>
+                      <SelectValue placeholder={loadingLevels ? "Loading..." : "Select your education category"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {EDUCATION_CATEGORIES.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat}
+                      {educationLevels.map((level) => (
+                        <SelectItem key={level.id} value={level.name}>
+                          {level.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -330,17 +364,25 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
             <div className="space-y-2">
               <Label htmlFor="password">Password *</Label>
               <div className="relative">
-                <img src="/password-icon.png" alt="Password" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 pr-10"
                   required
                   minLength={6}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
               {tab === 'login' && (
                 <div className="text-right text-sm mt-1">
@@ -388,6 +430,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
               </p>
             )}
           </form>
+          )}
         </motion.div>
       </motion.div>
     </AnimatePresence>

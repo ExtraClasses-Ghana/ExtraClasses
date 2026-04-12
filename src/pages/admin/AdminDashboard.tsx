@@ -34,12 +34,11 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { motion } from "framer-motion";
 
 export default function AdminDashboard() {
-  // Fetch real-time dashboard statistics using optimized RPC function
   const { stats: dashboardStats, loading: statsLoading, error: statsError } = useAdminDashboardStats();
   
-  // Fetch analytics data for insights charts
   const { demographics, loading: demoLoading, error: demoError } = useStudentDemographics();
   const [revenuePeriod, setRevenuePeriod] = useState<"daily" | "weekly" | "monthly">("daily");
   const [revenueDuration, setRevenueDuration] = useState(30);
@@ -49,21 +48,11 @@ export default function AdminDashboard() {
   const [recentTeachers, setRecentTeachers] = useState<any[]>([]);
   const [teachersLoading, setTeachersLoading] = useState(true);
 
-  // Color palette for charts
   const COLORS = [
-    "#3b82f6", // blue
-    "#10b981", // green
-    "#f59e0b", // amber
-    "#ef4444", // red
-    "#8b5cf6", // purple
-    "#ec4899", // pink
-    "#14b8a6", // teal
-    "#f97316", // orange
-    "#6366f1", // indigo
-    "#84cc16", // lime
+    "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", 
+    "#ec4899", "#14b8a6", "#f97316", "#6366f1", "#84cc16",
   ];
 
-  // Transform demographics for pie chart
   const demographicsPieData = demographics
     .filter((d) => d.education_level)
     .map((d) => ({
@@ -74,9 +63,8 @@ export default function AdminDashboard() {
     }))
     .sort((a, b) => b.value - a.value);
 
-  // Transform subject distribution for bar chart
   const subjectBarData = distribution
-    .slice(0, 10) // Top 10 subjects
+    .slice(0, 10)
     .map((d) => ({
       name: d.subject_name,
       value: d.teacher_count,
@@ -85,7 +73,6 @@ export default function AdminDashboard() {
 
   const handleRevenuePeriodChange = (period: "daily" | "weekly" | "monthly") => {
     setRevenuePeriod(period);
-    // Adjust duration based on period
     if (period === "daily") {
       setRevenueDuration(30);
     } else if (period === "weekly") {
@@ -98,7 +85,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchRecentTeachers();
 
-    // Subscribe to teacher profile changes for recent teachers list
     const teacherProfilesChannel = supabase
       .channel("dashboard_recent_teachers")
       .on(
@@ -109,7 +95,6 @@ export default function AdminDashboard() {
           table: "teacher_profiles",
         },
         () => {
-          console.log("Teacher profile changed, refreshing recent teachers");
           fetchRecentTeachers();
         }
       )
@@ -122,7 +107,6 @@ export default function AdminDashboard() {
 
   const fetchRecentTeachers = async () => {
     try {
-      // Fetch recent teachers
       const { data: recent } = await supabase
         .from("teacher_profiles")
         .select(`
@@ -145,8 +129,9 @@ export default function AdminDashboard() {
       title: "Total Teachers",
       value: dashboardStats?.total_teachers || 0,
       icon: GraduationCap,
-      color: "text-secondary",
-      bgColor: "bg-secondary/10",
+      color: "text-blue-500",
+      bgColor: "bg-blue-500/10",
+      ringColor: "ring-blue-500/20",
     },
     {
       title: "Total Students",
@@ -154,34 +139,15 @@ export default function AdminDashboard() {
       icon: Users,
       color: "text-primary",
       bgColor: "bg-primary/10",
+      ringColor: "ring-primary/20",
     },
     {
       title: "New Students Today",
       value: dashboardStats?.new_students_today || 0,
       icon: UserPlus,
-      color: "text-green-500",
-      bgColor: "bg-green-500/10",
-    },
-    {
-      title: "New Students This Week",
-      value: dashboardStats?.new_students_this_week || 0,
-      icon: TrendingUp,
-      color: "text-blue-500",
-      bgColor: "bg-blue-500/10",
-    },
-    {
-      title: "Pending Verification",
-      value: dashboardStats?.pending_verifications || 0,
-      icon: Clock,
-      color: "text-amber-500",
-      bgColor: "bg-amber-500/10",
-    },
-    {
-      title: "Total Revenue",
-      value: `GH₵${(dashboardStats?.total_revenue || 0).toLocaleString()}`,
-      icon: DollarSign,
       color: "text-emerald-500",
       bgColor: "bg-emerald-500/10",
+      ringColor: "ring-emerald-500/20",
     },
     {
       title: "Active Sessions",
@@ -189,315 +155,291 @@ export default function AdminDashboard() {
       icon: TrendingUp,
       color: "text-purple-500",
       bgColor: "bg-purple-500/10",
+      ringColor: "ring-purple-500/20",
     },
     {
-      title: "Completed Sessions",
+      title: "Pending Verification",
+      value: dashboardStats?.pending_verifications || 0,
+      icon: Clock,
+      color: "text-amber-500",
+      bgColor: "bg-amber-500/10",
+      ringColor: "ring-amber-500/20",
+    },
+    {
+      title: "Total Revenue",
+      value: "GH₵" + (dashboardStats?.total_revenue || 0).toLocaleString(),
+      icon: DollarSign,
+      color: "text-green-500",
+      bgColor: "bg-green-500/10",
+      ringColor: "ring-green-500/20",
+    },
+    {
+      title: "Completed Classes",
       value: dashboardStats?.completed_sessions || 0,
       icon: CheckCircle,
-      color: "text-emerald-500",
-      bgColor: "bg-emerald-500/10",
+      color: "text-teal-500",
+      bgColor: "bg-teal-500/10",
+      ringColor: "ring-teal-500/20",
     },
   ];
 
   return (
-    <AdminDashboardLayout
-      title="Dashboard Overview"
-      subtitle="Monitor your platform's performance"
-    >
-      {/* Error State */}
-      {statsError && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-          <p className="font-medium">Error loading dashboard statistics</p>
-          <p className="text-sm">{statsError.message}</p>
-        </div>
-      )}
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {statCards.map((stat, index) => (
-          <Card key={index}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">{stat.title}</p>
-                  <p className="text-3xl font-bold mt-1">
-                    {statsLoading ? "..." : stat.value}
-                  </p>
+    <AdminDashboardLayout title="" subtitle="">
+      <div className="relative min-h-[85vh] p-6 -mx-6 -mt-6 overflow-hidden">
+        {/* Dynamic Glassmorphism Background */}
+        <div className="absolute inset-0 bg-background/50 pointer-events-none z-0" />
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/10 blur-[130px] rounded-full pointer-events-none z-0 mix-blend-screen" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-500/10 blur-[150px] rounded-full pointer-events-none z-0 mix-blend-screen" />
+        
+        <div className="relative z-10 space-y-8">
+          
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 p-8 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-lg ring-1 ring-white/5">
+            <div>
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-3 mb-2"
+              >
+                <div className="p-3 rounded-xl bg-primary/20 ring-1 ring-primary/30">
+                  <TrendingUp className="w-6 h-6 text-primary" />
                 </div>
-                <div className={`p-4 rounded-xl ${stat.bgColor}`}>
-                  <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Performance Insights Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Student Demographics Pie Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Student Demographics</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {demoLoading ? (
-              <div className="h-64 flex items-center justify-center text-muted-foreground">
-                Loading...
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={demographicsPieData.length > 0 ? demographicsPieData : [{name: "No Data", value: 1}]}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label={({ name, value }) => `${name}: ${value}`}
-                    isAnimationActive={true}
-                    animationDuration={800}
-                    animationEasing="ease-out"
-                  >
-                    {(demographicsPieData.length > 0 ? demographicsPieData : [{name: "No Data", value: 1}]).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => `${value} students`} />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Revenue Trend Chart */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Revenue Trend</CardTitle>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => handleRevenuePeriodChange("daily")}
-                  className={`px-2 py-1 text-xs rounded ${
-                    revenuePeriod === "daily" ? "bg-primary text-white" : "text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  Daily
-                </button>
-                <button
-                  onClick={() => handleRevenuePeriodChange("weekly")}
-                  className={`px-2 py-1 text-xs rounded ${
-                    revenuePeriod === "weekly" ? "bg-primary text-white" : "text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  Weekly
-                </button>
-                <button
-                  onClick={() => handleRevenuePeriodChange("monthly")}
-                  className={`px-2 py-1 text-xs rounded ${
-                    revenuePeriod === "monthly" ? "bg-primary text-white" : "text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  Monthly
-                </button>
-              </div>
+                <h2 className="text-3xl font-display font-bold text-foreground bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+                  Dashboard Overview
+                </h2>
+              </motion.div>
+              <motion.p 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="text-muted-foreground ml-16"
+              >
+                Monitor your platform's performance, revenue, and overall activity.
+              </motion.p>
             </div>
-          </CardHeader>
-          <CardContent>
-            {trendsLoading ? (
-              <div className="h-64 flex items-center justify-center text-muted-foreground">
-                Loading...
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={trends.length > 0 ? trends : [{trend_label: "No Data", revenue: 0, session_count: 0, avg_session_value: 0}]} isAnimationActive={true}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="trend_label"
-                    tick={{ fontSize: 11 }}
-                    angle={-30}
-                    height={60}
-                  />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip
-                    formatter={(value) => {
-                      if (typeof value === "number") {
-                        return value.toLocaleString("en-US", {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 0,
-                        });
-                      }
-                      return value;
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Line
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke="#10b981"
-                    strokeWidth={2}
-                    name="Revenue (GH₵)"
-                    dot={{ r: 3 }}
-                    isAnimationActive={true}
-                    animationDuration={1200}
-                    animationEasing="ease-in-out"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="session_count"
-                    stroke="#3b82f6"
-                    strokeWidth={2}
-                    name="Sessions"
-                    dot={{ r: 3 }}
-                    isAnimationActive={true}
-                    animationDuration={1200}
-                    animationEasing="ease-in-out"
-                    animationBegin={100}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Subject Distribution */}
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="text-lg">Subject Distribution</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="teachers" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="teachers" className="text-xs sm:text-sm">Teachers per Subject</TabsTrigger>
-              <TabsTrigger value="revenue" className="text-xs sm:text-sm">Revenue by Subject</TabsTrigger>
-            </TabsList>
-
-            {/* Teachers per Subject */}
-            <TabsContent value="teachers" className="mt-4">
-              {distLoading ? (
-                <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  Loading...
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={subjectBarData.length > 0 ? subjectBarData : [{name: "No Data", value: 0, revenue: 0}]} isAnimationActive={true}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fontSize: 11 }}
-                      angle={-30}
-                      height={80}
-                    />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip />
-                    <Bar 
-                      dataKey="value" 
-                      fill="#8b5cf6" 
-                      name="Teachers"
-                      isAnimationActive={true}
-                      animationDuration={1000}
-                      animationEasing="ease-out"
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </TabsContent>
-
-            {/* Revenue by Subject */}
-            <TabsContent value="revenue" className="mt-4">
-              {distLoading ? (
-                <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  Loading...
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={subjectBarData.length > 0 ? subjectBarData : [{name: "No Data", value: 0, revenue: 0}]} isAnimationActive={true}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fontSize: 11 }}
-                      angle={-30}
-                      height={80}
-                    />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip
-                      formatter={(value) => {
-                        if (typeof value === "number") {
-                          return `GH₵${value.toLocaleString()}`;
-                        }
-                        return value;
-                      }}
-                    />
-                    <Bar 
-                      dataKey="revenue" 
-                      fill="#10b981" 
-                      name="Revenue (GH₵)"
-                      isAnimationActive={true}
-                      animationDuration={1000}
-                      animationEasing="ease-out"
-                      animationBegin={150}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-
-      {/* Recent Teachers */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Teacher Registrations</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {teachersLoading ? (
-              <p className="text-muted-foreground text-center py-8">Loading...</p>
-            ) : recentTeachers.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">No teachers registered yet</p>
-            ) : (
-              recentTeachers.map((teacher) => (
-                <div
-                  key={teacher.id}
-                  className="flex items-center justify-between p-4 rounded-lg bg-muted/50"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center">
-                      <GraduationCap className="w-5 h-5 text-secondary" />
-                    </div>
-                    <div>
-                      <p className="font-medium">{teacher.profiles?.full_name || "Unknown"}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {teacher.profiles?.email}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {teacher.verification_status === "verified" && (
-                      <span className="flex items-center gap-1 text-sm text-green-600">
-                        <CheckCircle className="w-4 h-4" /> Verified
-                      </span>
-                    )}
-                    {teacher.verification_status === "pending" && (
-                      <span className="flex items-center gap-1 text-sm text-amber-500">
-                        <Clock className="w-4 h-4" /> Pending
-                      </span>
-                    )}
-                    {(teacher.verification_status === "unverified" || !teacher.verification_status) && (
-                      <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <AlertCircle className="w-4 h-4" /> Unverified
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
           </div>
-        </CardContent>
-      </Card>
+
+          {statsError && (
+            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive font-medium backdrop-blur-sm">
+              <AlertCircle className="inline-block w-5 h-5 mr-2" />
+              Error loading dashboard statistics: {statsError.message}
+            </div>
+          )}
+
+          {/* Staggered Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {statCards.map((stat, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                <Card className="bg-white/40 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-sm group hover:bg-white/50 transition-all duration-300">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{stat.title}</p>
+                        <p className="text-3xl font-bold mt-1 text-foreground">
+                          {statsLoading ? "..." : stat.value}
+                        </p>
+                      </div>
+                      <div className={"p-4 rounded-xl ring-1 transition-transform group-hover:scale-110 " + stat.bgColor + " " + stat.ringColor}>
+                        <stat.icon className={"w-6 h-6 " + stat.color} />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Main Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Pie Chart */}
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}>
+              <Card className="bg-white/40 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-sm h-full">
+                <CardHeader>
+                  <CardTitle className="text-lg font-bold">Student Demographics</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {demoLoading ? (
+                    <div className="h-[300px] flex items-center justify-center text-muted-foreground animate-pulse">Loading charts...</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={demographicsPieData.length > 0 ? demographicsPieData : [{name: "No Data", value: 1}]}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={90}
+                          label={({ name, value }) => name + ": " + value}
+                          isAnimationActive={true}
+                        >
+                          {(demographicsPieData.length > 0 ? demographicsPieData : [{name: "No Data", value: 1}]).map((entry, index) => (
+                            <Cell key={"cell-" + index} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Line Chart */}
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }}>
+              <Card className="bg-white/40 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-sm h-full">
+                <CardHeader>
+                  <div className="flex flex-wrap gap-4 items-center justify-between">
+                    <CardTitle className="text-lg font-bold">Revenue Trend</CardTitle>
+                    <div className="flex bg-background/50 p-1 rounded-lg border border-border/50">
+                      {(["daily", "weekly", "monthly"] as const).map(period => (
+                        <button
+                          key={period}
+                          onClick={() => handleRevenuePeriodChange(period)}
+                          className={"px-3 py-1.5 text-xs font-semibold rounded-md capitalize transition-colors " + (revenuePeriod === period ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground")}
+                        >
+                          {period}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {trendsLoading ? (
+                    <div className="h-[300px] flex items-center justify-center text-muted-foreground animate-pulse">Loading charts...</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={trends.length > 0 ? trends : [{trend_label: "No Data", revenue: 0, session_count: 0}]}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
+                        <XAxis dataKey="trend_label" angle={-30} height={60} stroke="currentColor" tick={{ fontSize: 11, fill: 'currentColor' }} />
+                        <YAxis tick={{ fontSize: 11, fill: 'currentColor' }} stroke="currentColor" />
+                        <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                        <Legend wrapperStyle={{ fontSize: 12 }} />
+                        <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={3} name="Revenue (GH₵)" dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                        <Line type="monotone" dataKey="session_count" stroke="#3b82f6" strokeWidth={3} name="Sessions" dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <Card className="bg-white/40 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-sm h-full">
+                <CardHeader>
+                  <CardTitle className="text-lg font-bold">Subject Distribution</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Tabs defaultValue="teachers" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 bg-background/50 rounded-xl p-1 h-12">
+                      <TabsTrigger value="teachers" className="rounded-lg text-sm transition-all data-[state=active]:shadow-sm">Teachers per Subject</TabsTrigger>
+                      <TabsTrigger value="revenue" className="rounded-lg text-sm transition-all data-[state=active]:shadow-sm">Revenue by Subject</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="teachers" className="mt-6">
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={subjectBarData.length > 0 ? subjectBarData : [{name: "No Data", value: 0}]}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
+                          <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'currentColor' }} angle={-30} height={80} stroke="currentColor" />
+                          <YAxis tick={{ fontSize: 11, fill: 'currentColor' }} stroke="currentColor" />
+                          <Tooltip cursor={{ fill: 'rgba(255,255,255,0.1)' }} contentStyle={{ borderRadius: '12px', border: 'none' }} />
+                          <Bar dataKey="value" fill="#8b5cf6" name="Teachers" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </TabsContent>
+
+                    <TabsContent value="revenue" className="mt-6">
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={subjectBarData.length > 0 ? subjectBarData : [{name: "No Data", revenue: 0}]}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
+                          <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'currentColor' }} angle={-30} height={80} stroke="currentColor" />
+                          <YAxis tick={{ fontSize: 11, fill: 'currentColor' }} stroke="currentColor" />
+                          <Tooltip cursor={{ fill: 'rgba(255,255,255,0.1)' }} contentStyle={{ borderRadius: '12px', border: 'none' }} />
+                          <Bar dataKey="revenue" fill="#10b981" name="Revenue (GH₵)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="lg:col-span-1">
+              <Card className="bg-white/40 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-sm h-full">
+                <CardHeader>
+                  <CardTitle className="text-lg font-bold flex flex-col gap-1">
+                    <span>Recent Teachers</span>
+                    <span className="text-xs font-normal text-muted-foreground tracking-normal uppercase">Newest Registrations</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {teachersLoading ? (
+                      <div className="flex justify-center py-6"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"/></div>
+                    ) : recentTeachers.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">No teachers registered yet</p>
+                    ) : (
+                      recentTeachers.map((teacher, idx) => (
+                        <motion.div
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.1 }}
+                          key={teacher.user_id || idx}
+                          className="flex items-center justify-between p-4 rounded-xl bg-background/60 hover:bg-white/50 border border-white/10 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center ring-1 ring-secondary/30">
+                              {teacher.profiles?.avatar_url ? (
+                                <img src={teacher.profiles.avatar_url} className="w-full h-full rounded-full object-cover" />
+                              ) : (
+                                <GraduationCap className="w-5 h-5 text-secondary" />
+                              )}
+                            </div>
+                            <div className="overflow-hidden">
+                              <p className="font-bold text-sm truncate">{teacher.profiles?.full_name || "Unknown"}</p>
+                              <p className="text-xs text-muted-foreground truncate max-w-[120px]">
+                                {teacher.profiles?.email}
+                              </p>
+                            </div>
+                          </div>
+                          <div>
+                            {teacher.verification_status === "verified" && (
+                              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-green-500/10 text-green-600 text-xs font-semibold">
+                                <CheckCircle className="w-3.5 h-3.5" />
+                                <span>Verified</span>
+                              </div>
+                            )}
+                            {(teacher.verification_status === "in_review" || teacher.verification_status === "pending") && (
+                              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-500/10 text-amber-600 text-xs font-semibold">
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>Review</span>
+                              </div>
+                            )}
+                            {(teacher.verification_status === "unverified" || !teacher.verification_status) && (
+                              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-foreground/10 text-muted-foreground text-xs font-semibold">
+                                <AlertCircle className="w-3.5 h-3.5" />
+                                <span>New</span>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+          
+        </div>
+      </div>
     </AdminDashboardLayout>
   );
 }

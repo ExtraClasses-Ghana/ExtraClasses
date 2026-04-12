@@ -8,6 +8,15 @@ interface NotificationCounts {
   favoriteUpdates: number;
 }
 
+export interface AppNotification {
+  id: string;
+  type: 'message' | 'session' | 'payment' | 'favorite';
+  title: string;
+  message: string;
+  read: boolean;
+  created_at: string;
+}
+
 export function useNotifications(userId: string | undefined) {
   const [notifications, setNotifications] = useState<NotificationCounts>({
     unreadMessages: 0,
@@ -15,6 +24,8 @@ export function useNotifications(userId: string | undefined) {
     pendingPayments: 0,
     favoriteUpdates: 0,
   });
+  
+  const [items, setItems] = useState<AppNotification[]>([]);
 
   useEffect(() => {
     if (!userId) return;
@@ -42,6 +53,30 @@ export function useNotifications(userId: string | undefined) {
           pendingPayments: 0, // Can be calculated from payments table
           favoriteUpdates: 0, // Can be calculated from favorites
         });
+        
+        // Build items array
+        const newItems: AppNotification[] = [];
+        if (messageCount && messageCount > 0) {
+          newItems.push({
+            id: 'msgs',
+            type: 'message',
+            title: 'New Messages',
+            message: `You have ${messageCount} unread message(s)`,
+            read: false,
+            created_at: new Date().toISOString()
+          });
+        }
+        if (sessionCount && sessionCount > 0) {
+          newItems.push({
+            id: 'sess',
+            type: 'session',
+            title: 'Upcoming Sessions',
+            message: `You have ${sessionCount} upcoming session(s)`,
+            read: false,
+            created_at: new Date().toISOString()
+          });
+        }
+        setItems(newItems);
       } catch (error) {
         console.error("Error fetching notifications:", error);
       }
@@ -88,5 +123,7 @@ export function useNotifications(userId: string | undefined) {
     };
   }, [userId]);
 
-  return notifications;
+  const totalUnread = notifications.unreadMessages + notifications.upcomingSessions;
+
+  return { ...notifications, totalUnread, items };
 }

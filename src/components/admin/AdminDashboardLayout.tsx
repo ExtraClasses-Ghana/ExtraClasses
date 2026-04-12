@@ -12,13 +12,18 @@ import {
   FileText,
   Menu,
   X,
-  MessageSquare
+  MessageSquare,
+  Megaphone,
+  Image as ImageIcon
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNotificationCount } from "@/hooks/useNotificationCount";
+import { useNotifications } from "@/hooks/useNotifications";
 import { supabase } from "@/integrations/supabase/client";
+import { WelcomeOverlay } from "@/components/dashboard/WelcomeOverlay";
+import { GlobalNotificationBell } from "@/components/notifications/GlobalNotificationBell";
 import logo from "@/assets/extraclasses-logo.webp";
 
 interface AdminDashboardLayoutProps {
@@ -40,13 +45,17 @@ const navItems = [
   { href: "/admin/payments", icon: DollarSign, label: "Payments" },
   { href: "/admin/notifications", icon: Bell, label: "Notifications" },
   { href: "/admin/requests", icon: MessageSquare, label: "Requests" },
+  { href: "/admin/news-ticker", icon: Megaphone, label: "News Tickers" },
+  { href: "/admin/carousel", icon: ImageIcon, label: "Ad Carousels" },
   { href: "/admin/settings", icon: Settings, label: "Settings" },
 ];
 
 export function AdminDashboardLayout({ children, title, subtitle }: AdminDashboardLayoutProps) {
   const location = useLocation();
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, user } = useAuth();
   const { unreadCount } = useNotificationCount();
+  const chatNotifications = useNotifications(user?.id);
+  const totalUnread = unreadCount + chatNotifications.unreadMessages;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingSessionsCount, setPendingSessionsCount] = useState<number>(0);
 
@@ -89,6 +98,10 @@ export function AdminDashboardLayout({ children, title, subtitle }: AdminDashboa
 
   return (
     <div className="min-h-screen bg-background flex">
+      {profile && (
+        <WelcomeOverlay userName={profile.full_name} role="Admin" />
+      )}
+
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
@@ -186,14 +199,7 @@ export function AdminDashboardLayout({ children, title, subtitle }: AdminDashboa
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="w-5 h-5" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
-              )}
-            </Button>
+            <GlobalNotificationBell role="admin" />
           </div>
         </header>
 

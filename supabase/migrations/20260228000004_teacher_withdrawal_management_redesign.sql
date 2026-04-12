@@ -679,7 +679,7 @@ AS $$
   FROM public.withdrawal_notifications wn
   LEFT JOIN public.teacher_withdrawals tw ON tw.id = wn.withdrawal_id
   LEFT JOIN public.profiles p ON p.user_id = tw.teacher_id
-  WHERE wn.admin_id = COALESCE(admin_id, auth.uid())
+  WHERE wn.admin_id = COALESCE($1, auth.uid())
   ORDER BY wn.is_read ASC, wn.created_at DESC
   LIMIT limit_count
   OFFSET offset_count;

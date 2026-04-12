@@ -1,7 +1,9 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, addDays, isToday, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval, getDay } from "date-fns";
-import { X, Calendar as CalendarIcon, Clock, Video, Home, CreditCard, CheckCircle, ArrowRight, ArrowLeft, Check, Users, Loader2 } from "lucide-react";
+import { X, Calendar as CalendarIcon, Clock, Video, Home, CreditCard, CheckCircle, ArrowRight, ArrowLeft, Check, Users, Loader2, Download, FileText } from "lucide-react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -141,6 +143,8 @@ export function BookingModal({
   const [studentLocation, setStudentLocation] = useState("");
   const [notes, setNotes] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
+  const [transactionRef, setTransactionRef] = useState<string | null>(null);
+  const invoiceRef = useRef<HTMLDivElement>(null);
 
   // Realtime availability state
   const [teacherAvailability, setTeacherAvailability] = useState<WeeklyAvailability | null>(null);
@@ -445,6 +449,8 @@ export function BookingModal({
         transaction_ref: payData.reference || reference,
       });
 
+      setTransactionRef(payData.reference || reference);
+
       // Create admin notification for new booking
       await supabase.from("admin_notifications").insert({
         type: "new_booking",
@@ -486,7 +492,32 @@ export function BookingModal({
     setStudentLocation("");
     setNotes("");
     setIsRecurring(false);
+    setTransactionRef(null);
     onClose();
+  };
+
+  const downloadInvoice = async () => {
+    if (!invoiceRef.current) return;
+    try {
+      const canvas = await html2canvas(invoiceRef.current, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Booking_Invoice_${transactionRef || "receipt"}.pdf`);
+    } catch (err) {
+      console.error("Error generating PDF:", err);
+      toast({
+        title: "Download Failed",
+        description: "Could not generate the invoice PDF.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Disable past dates and days where teacher is unavailable
@@ -514,30 +545,30 @@ export function BookingModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={resetAndClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto p-0">
-        <DialogHeader className="p-6 pb-0">
-          <DialogTitle className="text-xl font-display">Book a Session</DialogTitle>
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto p-0 border border-white/20 bg-white/95 dark:bg-slate-950/90 backdrop-blur-2xl shadow-[0_20px_50px_rgba(8,_112,_184,_0.1)] rounded-3xl">
+        <DialogHeader className="p-8 pb-6 bg-gradient-to-br from-indigo-50/80 to-purple-50/80 dark:from-indigo-950/30 dark:to-purple-950/30 border-b border-indigo-100/20">
+          <DialogTitle className="text-3xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 tracking-tight text-center">Book Your Session</DialogTitle>
           {/* Progress Steps */}
-          <div className="flex items-center gap-2 mt-4">
+          <div className="flex items-center gap-2 mt-6 mb-2">
             {[1, 2, 3, 4].map((s) => (
-              <div key={s} className="flex items-center gap-2 flex-1">
+               <div key={s} className="flex items-center gap-2 flex-1">
                 <div
                   className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
+                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 relative",
                     step >= s
-                      ? "bg-secondary text-white"
-                      : "bg-muted text-muted-foreground"
+                      ? "bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md shadow-indigo-500/20"
+                      : "bg-slate-100 text-slate-400"
                   )}
                 >
-                  {step > s ? <CheckCircle className="w-4 h-4" /> : s}
+                  {step > s ? <Check className="w-4 h-4" /> : s}
                 </div>
                 {s < 4 && (
-                  <div
-                    className={cn(
-                      "flex-1 h-1 rounded",
-                      step > s ? "bg-secondary" : "bg-muted"
-                    )}
-                  />
+                  <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden relative">
+                    <div
+                      className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-600 transition-transform duration-500 origin-left"
+                      style={{ transform: step > s ? "scaleX(1)" : "scaleX(0)" }}
+                    />
+                  </div>
                 )}
               </div>
             ))}
@@ -956,50 +987,129 @@ export function BookingModal({
               </motion.div>
             )}
 
-            {/* Step 4: Confirmation */}
+            {/* Step 4: Confirmation & Invoice */}
             {step === 4 && (
               <motion.div
                 key="step4"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="py-2"
               >
-                <div className="w-16 h-16 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-8 h-8 text-accent" />
+                <div 
+                  ref={invoiceRef}
+                  className="bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-200/50 overflow-hidden relative"
+                >
+                  <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+                  
+                  <div className="p-8">
+                    <div className="flex items-center justify-between mb-8">
+                      <div>
+                        <h2 className="text-2xl font-bold font-display text-slate-900 tracking-tight">Booking Confirmed</h2>
+                        <p className="text-sm text-slate-500 mt-1">Receipt for your session with {teacher.name}</p>
+                      </div>
+                      <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center">
+                        <CheckCircle className="w-8 h-8 text-emerald-500" />
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50/80 rounded-xl p-5 mb-6 border border-slate-100">
+                       <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-1">Student</p>
+                          <p className="font-medium text-slate-900">{studentName}</p>
+                          <p className="text-slate-500 mt-0.5">{studentEmail}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-1">Transaction Ref</p>
+                          <p className="font-mono font-medium text-slate-900">{transactionRef || "N/A"}</p>
+                          <p className="text-slate-500 mt-0.5">{format(new Date(), "MMM d, yyyy")}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 mb-8">
+                      <h3 className="font-semibold text-slate-900 text-sm uppercase tracking-wider">Session Details</h3>
+                      <div className="divide-y divide-slate-100">
+                        <div className="flex justify-between py-3">
+                          <span className="text-slate-600 font-medium">Subject</span>
+                          <span className="text-slate-900 font-semibold">{subject}</span>
+                        </div>
+                        <div className="flex justify-between py-3">
+                          <span className="text-slate-600 font-medium">Date & Time</span>
+                          <span className="text-slate-900 font-semibold">{selectedDate ? format(selectedDate, "MMM d, yyyy") : ""} at {selectedTime}</span>
+                        </div>
+                        <div className="flex justify-between py-3">
+                          <span className="text-slate-600 font-medium">Session Type</span>
+                          <span className="text-slate-900 font-semibold">{lessonType === "online" ? "Online Lesson" : "In-Person"}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-indigo-50/50 rounded-xl p-5 border border-indigo-100/50">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-slate-600">Total Amount Paid</span>
+                        <span className="text-3xl font-bold text-indigo-700 tracking-tight">GH₵{(totalPrice + platformFee).toFixed(2)}</span>
+                      </div>
+                      {platformFee > 0 && (
+                        <p className="text-right text-xs text-indigo-400 font-medium">Includes GH₵{platformFee.toFixed(2)} platform fee</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <h3 className="text-xl font-display font-bold text-foreground mb-2">
-                  Booking Confirmed!
-                </h3>
-                <p className="text-muted-foreground mb-6">
-                  Your session with {teacher.name} has been booked. You'll receive a confirmation email shortly.
-                </p>
-                <Button onClick={resetAndClose} className="btn-coral">
-                  Done
-                </Button>
+
+                <div className="flex gap-4 mt-8">
+                  <Button 
+                    onClick={downloadInvoice} 
+                    variant="outline" 
+                    className="flex-1 h-12 rounded-xl border-slate-200 hover:bg-slate-50 hover:text-indigo-600 transition-colors font-semibold"
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Download Invoice PDF
+                  </Button>
+                  <Button 
+                    onClick={resetAndClose} 
+                    className="flex-1 h-12 rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-colors font-semibold shadow-lg shadow-slate-900/20"
+                  >
+                    Done
+                  </Button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
 
           {/* Navigation Buttons */}
           {step < 4 && (
-            <div className="flex gap-3 mt-6 pt-4 border-t border-border">
+            <div className="flex gap-4 mt-8 pt-6 border-t border-slate-100">
               {step > 1 && (
-                <Button variant="outline" onClick={handleBack} className="flex-1">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
+                <Button variant="outline" onClick={handleBack} className="flex-1 h-12 rounded-xl border-slate-200 hover:bg-slate-50 font-semibold">
+                  <ArrowLeft className="w-5 h-5 mr-2" />
                   Back
                 </Button>
               )}
               <Button
                 onClick={step === 3 ? handleSubmit : handleNext}
-                className="btn-coral flex-1"
                 disabled={
                   (step === 1 && !canProceedStep1) ||
                   (step === 2 && !canProceedStep2) ||
                   (step === 3 && isSubmitting)
                 }
+                className="flex-1 h-12 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold transition-all shadow-lg shadow-indigo-500/30 border-0"
               >
-                {step === 3 ? (isSubmitting ? "Processing..." : "Confirm Booking") : "Continue"}
-                {step < 3 && <ArrowRight className="w-4 h-4 ml-2" />}
+                {step === 3 ? (
+                  isSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Confirm Booking"
+                  )
+                ) : (
+                  <>
+                    Continue
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </>
+                )}
               </Button>
             </div>
           )}

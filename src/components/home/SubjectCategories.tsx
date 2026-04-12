@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
-import { 
-  Calculator, 
-  BookOpen, 
-  FlaskConical, 
-  Globe2, 
-  Languages, 
+import {
+  Calculator,
+  BookOpen,
+  FlaskConical,
+  Globe2,
+  Languages,
   Monitor,
   Palette,
   Music,
@@ -57,7 +57,7 @@ export function SubjectCategories() {
             Explore <span className="text-secondary">50+ Subjects</span>
           </h2>
           <p className="text-lg text-muted-foreground">
-            From primary school basics to university-level courses, find expert 
+            From primary school basics to university-level courses, find expert
             tutors in every subject area across Ghana.
           </p>
         </motion.div>

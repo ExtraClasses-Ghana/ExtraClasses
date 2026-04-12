@@ -35,7 +35,7 @@ interface TeacherOnboardingModalProps {
   onComplete: () => void;
 }
 
-import { EDUCATION_CATEGORIES } from "@/hooks/useEducationLevel";
+import { useEducationLevels, useEducationSubCategories } from "@/hooks/useEducationLevel";
 
 const LANGUAGES = ["English", "Twi", "Ga", "Ewe", "Hausa", "French"];
 
@@ -57,10 +57,14 @@ const STEPS = [
 export function TeacherOnboardingModal({ isOpen, onClose, onComplete }: TeacherOnboardingModalProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [topics, setTopics] = useState<string[]>([]);
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Form state
+  // Form State - Education
+  const { levels: educationLevels, loading: loadingLevels } = useEducationLevels();
+  const { categories: subCategories, loading: loadingSubCategories } = useEducationSubCategories();
+  const [educationLevel, setEducationLevel] = useState("");
   const [educationCategory, setEducationCategory] = useState("");
   const { subjects } = useSubjectsByEducationLevel(educationCategory || null);
   const [bio, setBio] = useState("");
@@ -132,7 +136,7 @@ export function TeacherOnboardingModal({ isOpen, onClose, onComplete }: TeacherO
           hourly_rate: parseFloat(hourlyRate) || 0,
           onboarding_completed: true,
           achievements,
-          education_level: educationCategory,
+          education_level: educationLevel,
           education_sub_category: null,
         })
         .eq("user_id", user.id);
@@ -144,7 +148,7 @@ export function TeacherOnboardingModal({ isOpen, onClose, onComplete }: TeacherO
         .from("profiles")
         .update({ 
           region: selectedRegion,
-          education_level: educationCategory,
+          education_level: educationLevel,
           education_sub_category: null,
         })
         .eq("user_id", user.id);
@@ -171,7 +175,7 @@ export function TeacherOnboardingModal({ isOpen, onClose, onComplete }: TeacherO
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return !!educationCategory;
+        return !!educationLevel;
       case 2:
         return bio.length >= 50;
       case 3:
@@ -263,25 +267,30 @@ export function TeacherOnboardingModal({ isOpen, onClose, onComplete }: TeacherO
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label>Select your education category *</Label>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        {EDUCATION_CATEGORIES.map((cat) => (
-                          <button
-                            key={cat}
-                            type="button"
-                            onClick={() => {
-                              setEducationCategory(cat);
-                              setSelectedSubjects([]);
-                            }}
-                            className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                              educationCategory === cat
-                                ? "border-primary bg-primary/10 text-primary"
-                                : "border-border hover:border-primary/50"
-                            }`}
-                          >
-                            {cat}
-                          </button>
-                        ))}
-                      </div>
+                      {loadingLevels ? (
+                        <div className="text-sm text-muted-foreground p-3 border rounded-lg">Loading categories...</div>
+                      ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          {educationLevels.map((level) => (
+                            <button
+                              key={level.id}
+                              type="button"
+                              onClick={() => {
+                                setEducationLevel(level.name);
+                                setEducationCategory(level.name);
+                                setSelectedSubjects([]);
+                              }}
+                              className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                                educationLevel === level.name
+                                  ? "border-primary bg-primary/10 text-primary"
+                                  : "border-border hover:border-primary/50"
+                              }`}
+                            >
+                              {level.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

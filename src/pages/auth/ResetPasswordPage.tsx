@@ -12,12 +12,17 @@ export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
 
-  const [step, setStep] = useState<'validate' | 'reset' | 'success'>('validate');
+  const [step, setStep] = useState<'request' | 'validate' | 'reset' | 'success'>('validate');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  const [requestEmail, setRequestEmail] = useState('');
+  const [requesting, setRequesting] = useState(false);
+  const [requestSuccess, setRequestSuccess] = useState(false);
+  const [requestError, setRequestError] = useState('');
 
   const { validateToken, validating, error: validationError } = usePasswordResetValidation();
   const { resetPassword, loading: resetting, error: resetError, success } = usePasswordReset();
@@ -26,7 +31,7 @@ export default function ResetPasswordPage() {
   // Validate token on mount or when token changes
   useEffect(() => {
     if (!token) {
-      setStep('validate');
+      setStep('request');
       return;
     }
 
@@ -46,6 +51,25 @@ export default function ResetPasswordPage() {
       mounted = false;
     };
   }, [token, validateToken]);
+
+  const handleRequestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!requestEmail) return;
+
+    setRequesting(true);
+    setRequestError('');
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(requestEmail, {
+        redirectTo: window.location.origin + '/auth/reset-password',
+      });
+      if (error) throw error;
+      setRequestSuccess(true);
+    } catch (err: any) {
+      setRequestError(err.message || 'Failed to send reset email.');
+    } finally {
+      setRequesting(false);
+    }
+  };
 
   const handleResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,66 +100,116 @@ export default function ResetPasswordPage() {
     }
   };
 
-  // Token validation step
-  if (step === 'validate') {
+  // Request step
+  if (step === 'request') {
     return (
-      <div className='min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center px-4'>
+      <div className='min-h-[80vh] flex items-center justify-center px-4'>
         <div className='w-full max-w-md'>
-          <div className='bg-white rounded-2xl shadow-lg p-8'>
+          <div className='bg-white/80 dark:bg-black/40 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-3xl shadow-2xl p-8'>
             <div className='flex justify-center mb-6'>
-              <div className='w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center'>
-                <img src="/password-icon.png" alt="Password" className='w-8 h-8' />
+              <div className='w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg transform rotate-3'>
+                <Lock className='w-8 h-8 text-white' />
               </div>
             </div>
 
-            <h1 className='text-3xl font-bold text-center text-gray-900 mb-2'>
-              Reset Password
+            <h1 className='text-3xl font-display font-bold text-center text-foreground mb-2 tracking-tight'>
+              Forgot Password
             </h1>
-            <p className='text-center text-gray-500 mb-8'>
-              Check your email for a password reset link
+            <p className='text-center text-muted-foreground mb-8 text-sm'>
+              Enter your email address and we'll send you a link to reset your password.
             </p>
 
-            {validationError && (
-              <div className='bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex gap-3'>
-                <AlertCircle className='w-5 h-5 text-red-600 flex-shrink-0 mt-0.5' />
-                <div>
-                  <p className='font-medium text-red-900'>Validation Error</p>
-                  <p className='text-sm text-red-700 mt-1'>{validationError.message}</p>
-                </div>
+            {requestError && (
+              <div className='bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-xl p-4 mb-6 flex gap-3 text-red-600 dark:text-red-400 text-sm'>
+                <AlertCircle className='w-5 h-5 flex-shrink-0' />
+                <p>{requestError}</p>
               </div>
             )}
 
-            {!token && (
-              <p className='text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6'>
-                No reset token found. Please check your email for the password reset link.
-              </p>
+            {requestSuccess ? (
+              <div className='space-y-6'>
+                <div className='bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/50 rounded-xl p-4 flex gap-3 text-green-700 dark:text-green-400 text-sm'>
+                  <CheckCircle className='w-5 h-5 flex-shrink-0' />
+                  <p>Check your email for the reset link. Once you click it, you can set a new password.</p>
+                </div>
+                <button
+                  onClick={() => navigate('/auth/login')}
+                  className='w-full py-3 rounded-xl font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors'
+                >
+                  Return to Sign In
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleRequestSubmit} className='space-y-5'>
+                <div>
+                  <label className='block text-sm font-semibold text-foreground mb-2'>Email Address</label>
+                  <div className='relative'>
+                    <Mail className='absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground' />
+                    <input
+                      type="email"
+                      value={requestEmail}
+                      onChange={(e) => setRequestEmail(e.target.value)}
+                      className='w-full pl-10 pr-4 py-3 bg-white/50 dark:bg-black/50 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all'
+                      placeholder='you@example.com'
+                      required
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={requesting || !requestEmail}
+                  className='w-full py-3 rounded-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2'
+                >
+                  {requesting && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Send Reset Link
+                </button>
+              </form>
+            )}
+
+            <div className='mt-8 pt-6 border-t border-border/50 text-center space-y-4 text-sm'>
+              <button
+                onClick={() => navigate('/auth/login')}
+                className='text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-semibold transition-colors'
+              >
+                Wait, I remember my password!
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Token validation step
+  if (step === 'validate') {
+    return (
+      <div className='min-h-[80vh] flex items-center justify-center px-4'>
+        <div className='w-full max-w-md'>
+          <div className='bg-white/80 dark:bg-black/40 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-3xl shadow-2xl p-8'>
+            <h1 className='text-3xl font-display font-bold text-center text-foreground mb-4 tracking-tight'>
+              Verifying Reset Link
+            </h1>
+
+            {validationError && (
+              <div className='bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-xl p-4 mb-6 flex gap-3 text-red-600 dark:text-red-400 text-sm'>
+                <AlertCircle className='w-5 h-5 flex-shrink-0' />
+                <p>{validationError.message}</p>
+              </div>
             )}
 
             {validating && (
               <div className='flex items-center justify-center py-8'>
-                <div className='animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500'></div>
+                <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
               </div>
             )}
 
-            <div className='space-y-4'>
-              <button
-                onClick={() => navigate('/')}
-                className='w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors'
-              >
-                <ArrowLeft className='w-4 h-4' />
-                Back to Home
-              </button>
-
-              <div className='text-center text-sm text-gray-500'>
-                Remember your password?{' '}
-                <button
-                  onClick={() => navigate('/')}
-                  className='text-blue-600 hover:text-blue-700 font-medium'
-                >
-                  Sign in here
-                </button>
-              </div>
-            </div>
+            <button
+              onClick={() => navigate('/')}
+              className='w-full flex items-center justify-center gap-2 px-4 py-3 border border-border rounded-xl font-semibold hover:bg-muted transition-colors'
+            >
+              <ArrowLeft className='w-4 h-4' />
+              Back to Home
+            </button>
           </div>
         </div>
       </div>
@@ -148,19 +222,19 @@ export default function ResetPasswordPage() {
     const passwordsMatch = password && confirmPassword && password === confirmPassword;
 
     return (
-      <div className='min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center px-4'>
+      <div className='min-h-[80vh] flex items-center justify-center px-4'>
         <div className='w-full max-w-md'>
-          <div className='bg-white rounded-2xl shadow-lg p-8'>
+          <div className='bg-white/80 dark:bg-black/40 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-3xl shadow-2xl p-8'>
             <div className='flex justify-center mb-6'>
-              <div className='w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center'>
-                <img src="/password-icon.png" alt="Password" className='w-8 h-8' />
+              <div className='w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg transform rotate-3'>
+                <Lock className='w-8 h-8 text-white' />
               </div>
             </div>
 
-            <h1 className='text-3xl font-bold text-center text-gray-900 mb-2'>
+            <h1 className='text-3xl font-display font-bold text-center text-foreground mb-2 tracking-tight'>
               Create New Password
             </h1>
-            <p className='text-center text-gray-500 mb-8'>
+            <p className='text-center text-muted-foreground mb-8 text-sm'>
               Enter a strong password for your account
             </p>
 
@@ -337,46 +411,27 @@ export default function ResetPasswordPage() {
 
   // Success step
   return (
-    <div className='min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center px-4'>
+    <div className='min-h-[80vh] flex items-center justify-center px-4'>
       <div className='w-full max-w-md'>
-        <div className='bg-white rounded-2xl shadow-lg p-8 text-center'>
+        <div className='bg-white/80 dark:bg-black/40 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-3xl shadow-2xl p-8 text-center'>
           <div className='flex justify-center mb-6'>
-            <div className='w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center animate-pulse'>
+            <div className='w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center animate-pulse shadow-lg transform rotate-3'>
               <CheckCircle className='w-8 h-8 text-white' />
             </div>
           </div>
 
-          <h1 className='text-3xl font-bold text-gray-900 mb-2'>Password Reset Successful</h1>
-          <p className='text-gray-500 mb-6'>
+          <h1 className='text-3xl font-display font-bold text-foreground mb-2'>Reset Successful</h1>
+          <p className='text-muted-foreground mb-8 text-sm'>
             Your password has been successfully reset. You will be redirected to the sign-in page
             shortly.
           </p>
 
-          <div className='bg-green-50 border border-green-200 rounded-lg p-4 mb-8'>
-            <p className='text-sm text-green-800'>
-              You can now sign in with your new password.
-            </p>
-          </div>
-
-          <div className='space-y-4'>
-            <button
-              onClick={() => navigate('/')}
-              className='w-full py-2.5 rounded-lg font-medium bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-lg transform hover:scale-105 transition-all'
-            >
-              Go to Sign In
-            </button>
-
-            <button
-              onClick={() => navigate('/')}
-              className='w-full py-2.5 rounded-lg font-medium border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors'
-            >
-              Back to Home
-            </button>
-          </div>
-
-          <p className='mt-6 text-xs text-gray-500'>
-            Redirecting to sign-in in 3 seconds...
-          </p>
+          <button
+            onClick={() => navigate('/auth/login')}
+            className='w-full py-3 rounded-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 text-white shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]'
+          >
+            Go to Sign In Now
+          </button>
         </div>
       </div>
     </div>

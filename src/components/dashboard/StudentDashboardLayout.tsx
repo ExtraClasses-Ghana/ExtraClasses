@@ -10,7 +10,8 @@ import {
   LogOut,
   Menu,
   X,
-  ChevronLeft
+  ChevronLeft,
+  Bell
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,6 +20,8 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import logo from "@/assets/extraclasses-logo.webp";
+import { WelcomeOverlay } from "./WelcomeOverlay";
+import { GlobalNotificationBell } from "@/components/notifications/GlobalNotificationBell";
 
 const menuItems = [
   { icon: Calendar, label: "Upcoming Sessions", path: "/dashboard/student" },
@@ -50,6 +53,10 @@ export function StudentDashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-muted/30">
+      {profile && (
+        <WelcomeOverlay userName={profile.full_name} role="Student" />
+      )}
+
       {/* Mobile Overlay */}
       {isMobile && isSidebarOpen && (
         <div 
@@ -194,7 +201,18 @@ export function StudentDashboardLayout({ children }: DashboardLayoutProps) {
             />
             <span className="font-display font-bold text-sm text-primary">EXTRACLASSES</span>
           </div>
+          {/* Mobile Notification Bell */}
+          <div className="ml-auto">
+            <GlobalNotificationBell role="student" />
+          </div>
         </header>
+      )}
+
+      {/* Desktop Notification Bell */}
+      {!isMobile && (
+        <div className="fixed top-6 right-8 z-40">
+          <GlobalNotificationBell role="student" />
+        </div>
       )}
 
       {/* Main Content */}

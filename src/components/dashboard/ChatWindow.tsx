@@ -118,31 +118,31 @@ export function ChatWindow({
   return (
     <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
       {/* Chat Header - WhatsApp Style */}
-      <div className="bg-gradient-to-r from-primary/95 to-primary/80 text-primary-foreground px-4 py-3 flex items-center justify-between shadow-md">
+      <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-3 flex items-center justify-between shadow z-10 relative">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {isMobile && (
             <Button
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="text-primary-foreground hover:bg-primary/20 flex-shrink-0"
+              className="text-white hover:bg-white/20 flex-shrink-0"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
           )}
-          <Avatar className="w-10 h-10 flex-shrink-0 ring-2 ring-primary-foreground/30">
+          <Avatar className="w-10 h-10 flex-shrink-0 border-2 border-white/40 shadow-sm">
             <AvatarImage src={partner.partnerAvatar || ""} />
-            <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground font-bold">
+            <AvatarFallback className="bg-white/20 text-white font-bold">
               {partner.partnerName.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <h3 className="font-bold text-lg truncate">{partner.partnerName}</h3>
-            <div className="flex items-center gap-1">
-              <div className={`w-2 h-2 rounded-full ${isPartnerOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
-              <p className="text-sm text-primary-foreground/80">
+            <h3 className="font-bold text-lg truncate tracking-tight">{partner.partnerName}</h3>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <div className={`w-2 h-2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.2)] ${isPartnerOnline ? 'bg-emerald-300 shadow-emerald-400' : 'bg-white/50'}`} />
+              <p className="text-xs text-emerald-50 font-medium">
                 {isPartnerTyping ? (
-                  <span className="italic">typing...</span>
+                  <span className="italic animate-pulse">typing...</span>
                 ) : isPartnerOnline ? (
                   "Online"
                 ) : (
@@ -154,54 +154,57 @@ export function ChatWindow({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2 ml-2">
+        <div className="flex items-center gap-1.5 ml-2">
           <Button
             variant="ghost"
             size="icon"
             onClick={onCall}
-            className="text-primary-foreground hover:bg-primary/20"
+            className="text-white hover:bg-white/20 rounded-full w-9 h-9"
             title="Start call"
           >
-            <Phone className="w-5 h-5" />
+            <Phone className="w-4 h-4" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
             onClick={onVideoCall}
-            className="text-primary-foreground hover:bg-primary/20"
+            className="text-white hover:bg-white/20 rounded-full w-9 h-9"
             title="Start video call"
           >
-            <Video className="w-5 h-5" />
+            <Video className="w-4 h-4" />
           </Button>
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-primary-foreground hover:bg-primary/20"
+                className="text-white hover:bg-white/20 rounded-full w-9 h-9"
               >
-                <MoreVertical className="w-5 h-5" />
+                <MoreVertical className="w-4 h-4" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-48" align="end">
-              <div className="space-y-2">
+            <PopoverContent className="w-48 p-2 rounded-xl shadow-xl" align="end">
+              <div className="space-y-1">
                 <Button
                   variant="ghost"
-                  className="w-full justify-start"
+                  className="w-full justify-start rounded-lg hover:bg-slate-50 text-slate-700"
                   onClick={onOpenSettings}
                 >
+                  <AlertCircle className="w-4 h-4 mr-2" />
                   Chat Settings
                 </Button>
                 <Button
                   variant="ghost"
-                  className="w-full justify-start"
+                  className="w-full justify-start rounded-lg hover:bg-slate-50 text-slate-700"
                   onClick={onClearChat}
                 >
+                  <MapPin className="w-4 h-4 mr-2" />
                   Clear Chat
                 </Button>
+                <div className="h-px bg-slate-100 my-1"></div>
                 <Button
                   variant="ghost"
-                  className="w-full justify-start text-destructive hover:text-destructive"
+                  className="w-full justify-start rounded-lg text-rose-600 hover:text-rose-700 hover:bg-rose-50"
                   onClick={onBlockUser}
                 >
                   Block User
@@ -213,8 +216,9 @@ export function ChatWindow({
       </div>
 
       {/* Messages Area */}
-      <ScrollArea className="flex-1">
-        <div className="p-4 space-y-4">
+      <ScrollArea className="flex-1 bg-slate-50 relative">
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: "url('data:image/svg+xml,%3Csvg width=\"20\" height=\"20\" viewBox=\"0 0 20 20\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"%23000\" fill-opacity=\"1\" fill-rule=\"evenodd\"%3E%3Ccircle cx=\"3\" cy=\"3\" r=\"3\"/%3E%3Ccircle cx=\"13\" cy=\"13\" r=\"3\"/%3E%3C/g%3E%3C/svg%3E')", backgroundSize: "20px 20px" }}></div>
+        <div className="p-4 space-y-4 relative z-10">
           {loading ? (
             <div className="flex items-center justify-center h-full py-12">
               <div className="text-center">
@@ -235,12 +239,10 @@ export function ChatWindow({
             <>
               {/* Date Separator for first message */}
               {messages.length > 0 && (
-                <div className="flex items-center gap-3 my-4">
-                  <div className="flex-1 h-px bg-border" />
-                  <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                <div className="flex justify-center my-4">
+                  <span className="text-xs font-semibold text-slate-500 bg-white border border-slate-100 shadow-sm px-4 py-1.5 rounded-full">
                     {format(new Date(messages[0].created_at), "MMMM d, yyyy")}
                   </span>
-                  <div className="flex-1 h-px bg-border" />
                 </div>
               )}
 
@@ -269,21 +271,24 @@ export function ChatWindow({
                     ) : null}
 
                     <div
-                      className={`max-w-[65%] px-4 py-2.5 rounded-2xl break-words ${
+                      className={`max-w-[75%] px-4 py-2.5 rounded-2xl break-words relative shadow-sm ${
                         isOwn
-                          ? "bg-primary text-primary-foreground rounded-br-none shadow-sm"
-                          : "bg-muted text-foreground rounded-bl-none"
+                          ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-br-sm"
+                          : "bg-white text-slate-800 border border-slate-100 rounded-bl-sm"
                       }`}
                     >
-                      <p className="text-sm leading-relaxed">{msg.content}</p>
-                      <div className={`text-xs mt-1 flex items-center gap-1 ${
+                      <p className="text-[15px] leading-relaxed">{msg.content}</p>
+                      <div className={`text-[11px] mt-1 flex items-center justify-end gap-1 ${
                         isOwn 
-                          ? "text-primary-foreground/70" 
-                          : "text-muted-foreground"
+                          ? "text-emerald-50" 
+                          : "text-slate-400"
                       }`}>
                         <span>{format(new Date(msg.created_at), "h:mm a")}</span>
                         {isOwn && msg.is_read && (
-                          <span className="text-primary-foreground/80">✓✓</span>
+                          <span className="text-white ml-0.5">✓✓</span>
+                        )}
+                        {isOwn && !msg.is_read && (
+                          <span className="text-white/60 ml-0.5">✓</span>
                         )}
                       </div>
                     </div>
@@ -298,26 +303,26 @@ export function ChatWindow({
       </ScrollArea>
 
       {/* Input Area - WhatsApp Style */}
-      <div className="border-t bg-background p-3 space-y-2">
-        <div className="flex items-end gap-2">
+      <div className="bg-white border-t border-slate-100 p-3 sm:p-4 z-10 w-full relative">
+        <div className="flex items-end gap-2 sm:gap-3 max-w-full">
           {/* Emoji Picker */}
           <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
             <PopoverTrigger asChild>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="flex-shrink-0 hover:bg-muted"
+                className="flex-shrink-0 hover:bg-slate-100 rounded-full h-11 w-11"
               >
-                <Smile className="w-5 h-5 text-muted-foreground" />
+                <Smile className="w-6 h-6 text-slate-400" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80 p-3" side="top" align="start">
+            <PopoverContent className="w-80 p-3 rounded-2xl shadow-xl" side="top" align="start">
               <div className="grid grid-cols-8 gap-1">
                 {EMOJI_LIST.map((emoji) => (
                   <button
                     key={emoji}
                     onClick={() => handleAddEmoji(emoji)}
-                    className="h-10 text-2xl hover:bg-muted rounded transition-colors flex items-center justify-center"
+                    className="h-10 text-2xl hover:bg-slate-100 rounded-xl transition-colors flex items-center justify-center"
                   >
                     {emoji}
                   </button>
@@ -327,23 +332,24 @@ export function ChatWindow({
           </Popover>
 
           {/* Message Input */}
-          <Input
-            ref={inputRef}
-            placeholder="Type a message..."
-            value={newMessage}
-            onChange={(e) => onMessageChange(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="flex-1 rounded-full bg-muted border-0"
-          />
+          <div className="flex-1 min-w-0 bg-slate-100 rounded-full flex items-center px-4 border border-transparent focus-within:border-emerald-300 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all">
+            <Input
+              ref={inputRef}
+              placeholder="Type a message..."
+              value={newMessage}
+              onChange={(e) => onMessageChange(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="flex-1 bg-transparent border-0 focus-visible:ring-0 px-0 h-11 text-[15px] shadow-none"
+            />
+          </div>
 
           {/* Send Button */}
           <Button
             onClick={onSendMessage}
             disabled={!newMessage.trim()}
-            className="flex-shrink-0 rounded-full bg-primary hover:bg-primary/90"
-            size="icon"
+            className="flex-shrink-0 rounded-full h-11 w-11 bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-500/30 transition-all p-0 flex items-center justify-center disabled:opacity-50 disabled:shadow-none"
           >
-            <Send className="w-5 h-5" />
+            <Send className="w-5 h-5 ml-1" />
           </Button>
         </div>
       </div>
