@@ -52,6 +52,44 @@ export function TeacherHeader({ teacher, onBookSession, onMessage }: TeacherHead
     checkFavorite();
   }, [user, teacher.id]);
 
+  // Inject dynamic social sharing (Open Graph) meta tags for this specific teacher
+  useEffect(() => {
+    const setMetaTag = (property: string, content: string, isName = false) => {
+      const attribute = isName ? "name" : "property";
+      let meta = document.querySelector(`meta[${attribute}="${property}"]`);
+      if (!meta) {
+        meta = document.createElement("meta");
+        meta.setAttribute(attribute, property);
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute("content", content);
+    };
+
+    const ogTitle = `${teacher.name} - ${teacher.subject} Tutor on ExtraClasses`;
+    const ogDesc = teacher.bio?.slice(0, 150) || `Book a lesson with ${teacher.name}, a verified ${teacher.subject} teacher on ExtraClasses.`;
+    
+    // Update Standard Title
+    document.title = ogTitle;
+
+    // Update Open Graph (Facebook/WhatsApp/LinkedIn)
+    setMetaTag("og:title", ogTitle);
+    setMetaTag("og:description", ogDesc);
+    if (teacher.image) setMetaTag("og:image", teacher.image);
+    setMetaTag("og:url", window.location.href);
+    setMetaTag("og:type", "profile");
+
+    // Update Twitter Cards
+    setMetaTag("twitter:title", ogTitle, true);
+    setMetaTag("twitter:description", ogDesc, true);
+    if (teacher.image) setMetaTag("twitter:image", teacher.image, true);
+    setMetaTag("twitter:card", "summary_large_image", true);
+
+    return () => {
+      // Revert title on unmount
+      document.title = "ExtraClasses Ghana - Connect with Ghana's Best Teachers";
+    };
+  }, [teacher]);
+
   const handleToggleFavorite = async () => {
     if (!user) {
       toast({
