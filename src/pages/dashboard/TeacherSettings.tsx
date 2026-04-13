@@ -160,7 +160,9 @@ export default function TeacherSettings() {
       )
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user?.id]);
 
   const fetchTeacherProfile = async () => {

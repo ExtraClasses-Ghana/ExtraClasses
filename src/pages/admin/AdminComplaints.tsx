@@ -60,8 +60,8 @@ interface Complaint {
   resolved_at: string | null;
   resolved_by: string | null;
   created_at: string;
-  reporter?: { full_name: string; email: string };
-  reported_user?: { full_name: string; email: string };
+  reporter?: { full_name: string; email: string } | null;
+  reported_user?: { full_name: string; email: string } | null;
 }
 
 export default function AdminComplaints() {

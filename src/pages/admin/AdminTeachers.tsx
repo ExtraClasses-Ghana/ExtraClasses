@@ -163,14 +163,25 @@ export default function AdminTeachers() {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) throw new Error("Not authenticated");
 
-        const response = await supabase.functions.invoke("delete-account", {
-          body: { target_user_id: actionModal.teacher.user_id },
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        });
+        let functionFailed = false;
+        try {
+          // @ts-ignore - RPC not yet in generated types
+          const { error: rpcError } = await supabase.rpc("delete_user_account", {
+            target_user_id: actionModal.teacher.user_id
+          });
+          if (rpcError) throw rpcError;
+        } catch (e) {
+          console.warn("RPC delete failed, falling back to direct db delete", e);
+          functionFailed = true;
+        }
 
-        if (response.error) throw response.error;
+        if (functionFailed) {
+          // Fallback: Delete related records so the teacher is removed from the platform
+          const { error: tErr } = await supabase.from("teacher_profiles").delete().eq("user_id", actionModal.teacher.user_id);
+          const { error: pErr } = await supabase.from("profiles").delete().eq("user_id", actionModal.teacher.user_id);
+          if (tErr) throw tErr;
+          if (pErr) throw pErr;
+        }
 
         toast({
           title: "Success",

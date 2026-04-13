@@ -154,6 +154,110 @@ export type Database = {
           },
         ]
       }
+      teacher_withdrawals: {
+        Row: {
+          id: string
+          teacher_id: string
+          amount: number
+          status: string
+          payment_method: string | null
+          payment_details: string | null
+          created_at: string
+          processed_at: string | null
+          admin_notes: string | null
+        }
+        Insert: {
+          id?: string
+          teacher_id: string
+          amount: number
+          status?: string
+          payment_method?: string | null
+          payment_details?: string | null
+          created_at?: string
+          processed_at?: string | null
+          admin_notes?: string | null
+        }
+        Update: {
+          id?: string
+          teacher_id?: string
+          amount?: number
+          status?: string
+          payment_method?: string | null
+          payment_details?: string | null
+          created_at?: string
+          processed_at?: string | null
+          admin_notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_withdrawals_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      education_levels: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      teacher_education_levels: {
+        Row: {
+          id: string
+          teacher_id: string
+          level_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          teacher_id: string
+          level_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          teacher_id?: string
+          level_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_education_levels_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "education_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_education_levels_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       favorite_teachers: {
         Row: {
           created_at: string
@@ -656,6 +760,7 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
       admin_wallet_adjustments: {
         Row: {
           id: string

@@ -175,7 +175,7 @@ export function useWebRTC({
   const startScreenShare = useCallback(async () => {
     try {
       const screen = await navigator.mediaDevices.getDisplayMedia({
-        video: { mediaSource: "screen" },
+        video: true,
         audio: false,
       });
       setScreenStream(screen);

@@ -90,7 +90,7 @@ export function StudentList() {
       const { data: sessions } = await supabase
         .from("sessions")
         .select("student_id, session_date")
-        .eq("teacher_id", user?.id)
+        .eq("teacher_id", user?.id as string)
         .order("session_date", { ascending: false });
 
       if (sessions) {
@@ -152,7 +152,7 @@ export function StudentList() {
       const { error: deleteError } = await supabase
         .from("sessions")
         .delete()
-        .eq("teacher_id", user?.id)
+        .eq("teacher_id", user?.id as string)
         .eq("student_id", deleteConfirmStudent.student_id);
 
       if (deleteError) throw deleteError;
@@ -304,9 +304,18 @@ export function StudentList() {
           <div className="flex-1 overflow-hidden">
             {selectedStudentChat && (
               <ChatWindow
-                partnerId={selectedStudentChat.student_id}
-                partnerName={selectedStudentChat.profile?.full_name || "Student"}
-                partnerAvatar={selectedStudentChat.profile?.avatar_url || ""}
+                partner={{
+                  partnerId: selectedStudentChat.student_id,
+                  partnerName: selectedStudentChat.profile?.full_name || "Student",
+                  partnerAvatar: selectedStudentChat.profile?.avatar_url || ""
+                }}
+                messages={[]}
+                loading={false}
+                currentUserId={user?.id}
+                newMessage=""
+                onMessageChange={() => {}}
+                onSendMessage={() => {}}
+                onAddEmoji={() => {}}
               />
             )}
           </div>

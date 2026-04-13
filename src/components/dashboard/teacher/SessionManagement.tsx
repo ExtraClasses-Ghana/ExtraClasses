@@ -89,7 +89,7 @@ export function SessionManagement() {
       let query = supabase
         .from("sessions")
         .select("*")
-        .eq("teacher_id", user?.id)
+        .eq("teacher_id", user?.id as string)
         .order("session_date", { ascending: true });
 
       if (activeTab === "pending") {
@@ -193,7 +193,7 @@ export function SessionManagement() {
       const { data: teacherProfile } = await supabase
         .from("profiles")
         .select("full_name")
-        .eq("user_id", user?.id)
+        .eq("user_id", user?.id as string)
         .maybeSingle();
 
       const teacherName = teacherProfile?.full_name || "Teacher";

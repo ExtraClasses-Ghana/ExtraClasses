@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { AlertCircle, CheckCircle, Eye, EyeOff, Lock, Mail, ArrowLeft } from 'lucide-react';
+import { AlertCircle, CheckCircle, Eye, EyeOff, Lock, Mail, ArrowLeft, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import {
   usePasswordResetValidation,
   usePasswordReset,
@@ -133,7 +134,7 @@ export default function ResetPasswordPage() {
                   <p>Check your email for the reset link. Once you click it, you can set a new password.</p>
                 </div>
                 <button
-                  onClick={() => navigate('/auth/login')}
+                  onClick={() => navigate('/', { state: { openAuth: true, defaultTab: "login" } })}
                   className='w-full py-3 rounded-xl font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors'
                 >
                   Return to Sign In
@@ -168,7 +169,7 @@ export default function ResetPasswordPage() {
 
             <div className='mt-8 pt-6 border-t border-border/50 text-center space-y-4 text-sm'>
               <button
-                onClick={() => navigate('/auth/login')}
+                onClick={() => navigate('/', { state: { openAuth: true, defaultTab: "login" } })}
                 className='text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-semibold transition-colors'
               >
                 Wait, I remember my password!

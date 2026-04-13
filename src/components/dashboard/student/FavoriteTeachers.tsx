@@ -25,10 +25,10 @@ interface FavoriteTeacher {
     region: string | null;
   };
   teacherProfile?: {
-    subjects: string[];
-    hourly_rate: number;
-    rating: number;
-    is_verified: boolean;
+    subjects: string[] | null;
+    hourly_rate: number | null;
+    rating: number | null;
+    is_verified: boolean | null;
   };
 }
 
@@ -72,7 +72,7 @@ export function FavoriteTeachers() {
       const { data: favoritesData } = await supabase
         .from("favorite_teachers")
         .select("id, teacher_id")
-        .eq("student_id", user?.id);
+        .eq("student_id", user?.id as string);
 
       if (favoritesData) {
         const favoritesWithDetails = await Promise.all(

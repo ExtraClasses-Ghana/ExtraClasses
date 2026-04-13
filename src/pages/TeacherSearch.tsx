@@ -179,8 +179,6 @@ export default function TeacherSearch() {
         setTeachers(validTeachers as Teacher[]);
       }
 
-      // Filter out null values (blocked/suspended)
-      setTeachers(teachersWithLevels.filter(Boolean) as Teacher[]);
     
     } catch (error) {
       console.error("Error fetching teachers:", error);

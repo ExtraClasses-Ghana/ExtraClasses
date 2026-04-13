@@ -83,7 +83,7 @@ export function AvailabilityManager() {
       const { data } = await supabase
         .from("teacher_profiles")
         .select("availability")
-        .eq("user_id", user?.id)
+        .eq("user_id", user?.id as string)
         .maybeSingle();
 
       if (data?.availability && typeof data.availability === 'object' && Object.keys(data.availability).length > 0) {
@@ -102,7 +102,7 @@ export function AvailabilityManager() {
       const { error } = await supabase
         .from("teacher_profiles")
         .update({ availability: JSON.parse(JSON.stringify(availability)) })
-        .eq("user_id", user?.id);
+        .eq("user_id", user?.id as string);
 
       if (error) throw error;
 

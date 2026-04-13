@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -37,6 +37,7 @@ interface TeacherData {
 export default function TeacherProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, role } = useAuth();
   const { toast } = useToast();
   const [isBookingOpen, setIsBookingOpen] = useState(false);
@@ -138,6 +139,14 @@ export default function TeacherProfile() {
   };
 
   const handleBookSession = () => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in or create an account to book your session.",
+      });
+      navigate(location.pathname, { state: { openAuth: true, defaultTab: "signup" } });
+      return;
+    }
     setIsBookingOpen(true);
   };
 

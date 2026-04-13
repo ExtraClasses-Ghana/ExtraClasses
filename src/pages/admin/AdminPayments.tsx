@@ -149,6 +149,25 @@ export default function AdminPayments() {
     }
   };
 
+  const deleteWithdrawal = async (withdrawalId: string) => {
+    if (!window.confirm("Are you sure you want to permanently delete this withdrawal request?")) return;
+    try {
+      const { error } = await supabase.from("teacher_withdrawals").delete().eq("id", withdrawalId);
+      if (error) throw error;
+      toast({
+        title: "Withdrawal Deleted",
+        description: "The request has been removed.",
+      });
+      fetchWithdrawals();
+    } catch (e: any) {
+      toast({
+        title: "Delete Failed",
+        description: e.message || "Failed to delete withdrawal.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleExport = () => {
     setIsExporting(true);
     try {
@@ -311,7 +330,7 @@ export default function AdminPayments() {
                       <span className="flex items-center px-2 py-0.5 rounded-sm bg-slate-100">{w.method === "mobile_money" ? "Mobile Money" : w.method}</span>
                       <span>{new Date(w.created_at).toLocaleDateString()}</span>
                     </div>
-                    <div className="pt-1">
+                    <div className="pt-1 flex justify-between items-center">
                       {w.status === "pending" ? (
                         <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200">Pending</Badge>
                       ) : w.status === "paid" ? (
@@ -319,6 +338,9 @@ export default function AdminPayments() {
                       ) : (
                         <Badge variant="secondary">{w.status}</Badge>
                       )}
+                      <Button variant="ghost" size="icon" onClick={() => deleteWithdrawal(w.id)} className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -332,7 +354,8 @@ export default function AdminPayments() {
                     <th className="py-4 px-6 border-b border-border/50">Amount</th>
                     <th className="py-4 px-6 border-b border-border/50">Method</th>
                     <th className="py-4 px-6 border-b border-border/50">Status</th>
-                    <th className="py-4 px-6 border-b border-border/50 rounded-tr-lg">Date</th>
+                    <th className="py-4 px-6 border-b border-border/50">Date</th>
+                    <th className="py-4 px-6 border-b border-border/50 rounded-tr-lg">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
@@ -360,6 +383,11 @@ export default function AdminPayments() {
                       </td>
                       <td className="py-4 px-6 text-slate-400 font-mono text-xs">
                         {new Date(w.created_at).toLocaleString()}
+                      </td>
+                      <td className="py-4 px-6">
+                        <Button variant="ghost" size="icon" onClick={() => deleteWithdrawal(w.id)} className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </td>
                     </tr>
                   ))}

@@ -3,8 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface TeacherProfile {
-  onboarding_completed: boolean;
-  verification_status: string;
+  onboarding_completed: boolean | null;
+  verification_status: string | null;
 }
 
 export function useTeacherOnboarding() {

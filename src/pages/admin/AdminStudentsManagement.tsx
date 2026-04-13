@@ -163,7 +163,7 @@ export default function AdminStudentsManagement() {
         Name: student.full_name,
         Email: student.email,
         EducationLevel: student.education_level || '',
-        Status: student.status,
+        Status: student.is_blocked ? 'Blocked' : student.is_suspended ? 'Suspended' : 'Active',
         TotalSessions: student.total_sessions,
         TotalSpent: student.total_spent,
         LastActive: student.last_active ? new Date(student.last_active).toLocaleDateString() : 'Never'
@@ -182,10 +182,10 @@ export default function AdminStudentsManagement() {
       a.click();
       window.URL.revokeObjectURL(url);
       
-      toast({ title: 'Success', description: 'Students exported as CSV' });
+      toast.success('Success', { description: 'Students exported as CSV' });
     } catch (error) {
       console.error('Export error:', error);
-      toast({ title: 'Export Failed', description: 'Failed to export students', variant: 'destructive' });
+      toast.error('Export Failed', { description: 'Failed to export students' });
     }
   };
 

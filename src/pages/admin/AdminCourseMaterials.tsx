@@ -56,11 +56,11 @@ interface CourseMaterial {
   subject_id: string | null;
   level: string | null;
   file_url: string | null;
-  is_free: boolean;
-  price: number;
-  downloads: number;
-  rating: number;
-  is_active: boolean;
+  is_free: boolean | null;
+  price: number | null;
+  downloads: number | null;
+  rating: number | null;
+  is_active: boolean | null;
   created_at: string;
 }
 
@@ -142,8 +142,8 @@ export default function AdminCourseMaterials() {
     setType(material.type);
     setSubjectId(material.subject_id || "");
     setLevel(material.level || "");
-    setIsFree(material.is_free);
-    setPrice(material.price.toString());
+    setIsFree(material.is_free ?? true);
+    setPrice((material.price || 0).toString());
     setIsDialogOpen(true);
   };
 
@@ -479,7 +479,7 @@ export default function AdminCourseMaterials() {
                     </div>
                     <div className="text-center sm:text-left">
                       <p className="text-3xl font-bold text-foreground/90">
-                        {materials.reduce((sum, m) => sum + m.downloads, 0).toLocaleString()}
+                        {materials.reduce((sum, m) => sum + (m.downloads || 0), 0).toLocaleString()}
                       </p>
                       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mt-1">Downloads</p>
                     </div>
@@ -572,12 +572,12 @@ export default function AdminCourseMaterials() {
                                 )}
                               </td>
                               <td className="py-4 px-6 text-center text-sm font-semibold text-foreground/80">
-                                {material.downloads.toLocaleString()}
+                                {(material.downloads || 0).toLocaleString()}
                               </td>
                               <td className="py-4 px-6 text-center">
                                 <Switch
-                                  checked={material.is_active}
-                                  onCheckedChange={() => toggleActive(material.id, material.is_active)}
+                                  checked={material.is_active ?? false}
+                                  onCheckedChange={() => toggleActive(material.id, material.is_active ?? false)}
                                   className="mx-auto"
                                 />
                               </td>

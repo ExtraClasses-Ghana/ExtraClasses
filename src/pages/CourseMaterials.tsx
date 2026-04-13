@@ -24,9 +24,9 @@ interface CourseMaterial {
   type: string;
   subject_id: string | null;
   level: string | null;
-  downloads: number;
-  rating: number;
-  is_free: boolean;
+  downloads: number | null;
+  rating: number | null;
+  is_free: boolean | null;
   file_url: string | null;
 }
 
@@ -271,7 +271,7 @@ export default function CourseMaterials() {
                         <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
                           <span className="flex items-center gap-1">
                             <Download className="w-4 h-4" />
-                            {material.downloads.toLocaleString()}
+                            {(material.downloads || 0).toLocaleString()}
                           </span>
                           <span className="flex items-center gap-1">
                             <Star className="w-4 h-4 fill-gold text-gold" />

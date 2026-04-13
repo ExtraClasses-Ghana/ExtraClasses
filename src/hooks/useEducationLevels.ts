@@ -19,7 +19,7 @@ export function useEducationLevels() {
       try {
         const { data, error } = await supabase
           .from('education_levels')
-          .select('id, name, slug, description, created_at')
+          .select('id, name, description, created_at')
           .order('created_at', { ascending: true });
 
         if (error) throw error;

@@ -201,7 +201,7 @@ export function useWithdrawalActions() {
         // @ts-ignore
         const { data, error: err } = await supabase.rpc('reject_withdrawal', {
           withdrawal_id: withdrawalId,
-          p_rejection_reason: rejectionReason,
+          rejection_reason: rejectionReason,
         });
 
         if (err) throw err;

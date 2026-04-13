@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Search, CalendarCheck, GraduationCap, ArrowRight } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const steps = [
   {
@@ -28,6 +29,7 @@ const steps = [
 
 export function HowItWorks() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
     <section id="how-it-works" className="py-24 bg-muted/50 relative overflow-hidden">
@@ -107,21 +109,23 @@ export function HowItWorks() {
         </div>
 
         {/* CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-          className="text-center mt-16"
-        >
-          <button
-            className="btn-coral inline-flex items-center gap-2"
-            onClick={() => navigate("/", { state: { openAuth: true, defaultTab: "signup" } })}
+        {!user && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.8 }}
+            className="text-center mt-16"
           >
-            Get Started Today
-            <ArrowRight className="w-5 h-5" />
-          </button>
-        </motion.div>
+            <button
+              className="btn-coral inline-flex items-center gap-2"
+              onClick={() => navigate("/", { state: { openAuth: true, defaultTab: "signup" } })}
+            >
+              Get Started Today
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          </motion.div>
+        )}
       </div>
     </section>
   );

@@ -61,7 +61,7 @@ export function StudentOverview() {
       const { data: sessions } = await supabase
         .from("sessions")
         .select("*")
-        .eq("student_id", user?.id)
+        .eq("student_id", user?.id as string)
         .gte("session_date", today)
         .in("status", ["pending", "confirmed"])
         .order("session_date", { ascending: true })
@@ -86,19 +86,19 @@ export function StudentOverview() {
       const { count: totalSessions } = await supabase
         .from("sessions")
         .select("*", { count: "exact", head: true })
-        .eq("student_id", user?.id);
+        .eq("student_id", user?.id as string);
 
       const { count: upcomingCount } = await supabase
         .from("sessions")
         .select("*", { count: "exact", head: true })
-        .eq("student_id", user?.id)
+        .eq("student_id", user?.id as string)
         .gte("session_date", today)
         .in("status", ["pending", "confirmed"]);
 
       const { data: payments } = await supabase
         .from("payments")
         .select("amount")
-        .eq("payer_id", user?.id)
+        .eq("payer_id", user?.id as string)
         .eq("status", "completed");
 
       const totalSpent = payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
@@ -106,7 +106,7 @@ export function StudentOverview() {
       const { count: favoriteTeachers } = await supabase
         .from("favorite_teachers")
         .select("*", { count: "exact", head: true })
-        .eq("student_id", user?.id);
+        .eq("student_id", user?.id as string);
 
       setStats({
         totalSessions: totalSessions || 0,

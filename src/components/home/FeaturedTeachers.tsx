@@ -36,13 +36,13 @@ interface TeacherWithProfile {
   id: string;
   user_id: string;
   bio: string | null;
-  subjects: string[];
-  hourly_rate: number;
-  experience_years: number;
-  is_verified: boolean;
-  rating: number;
-  total_reviews: number;
-  teaching_mode: string;
+  subjects: string[] | null;
+  hourly_rate: number | null;
+  experience_years: number | null;
+  is_verified: boolean | null;
+  rating: number | null;
+  total_reviews: number | null;
+  teaching_mode: string | null;
   profile: {
     full_name: string;
     avatar_url: string | null;
@@ -111,7 +111,7 @@ export function FeaturedTeachers() {
         // Accept either the textual verification status or the boolean flag
         .or("verification_status.eq.verified,is_verified.eq.true")
         .order("rating", { ascending: false })
-        .limit(8);
+        .limit(10);
 
       if (error) throw error;
 
@@ -143,16 +143,19 @@ export function FeaturedTeachers() {
   };
 
   const filteredTeachers = selectedRegion === "All Regions" 
-    ? teachers.slice(0, 4)
-    : teachers.filter(t => t.profile?.region === selectedRegion).slice(0, 4);
+    ? teachers.slice(0, 10)
+    : teachers.filter(t => t.profile?.region === selectedRegion).slice(0, 10);
 
   // Carousel functions
+  const itemsPerSlide = 1;
+  const totalSlides = Math.ceil(filteredTeachers.length / itemsPerSlide);
+
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % Math.ceil(filteredTeachers.length / 2));
+    setCurrentSlide((prev) => (prev + 1) % totalSlides);
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + Math.ceil(filteredTeachers.length / 2)) % Math.ceil(filteredTeachers.length / 2));
+    setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
   };
 
   const goToSlide = (index: number) => {
@@ -241,7 +244,7 @@ export function FeaturedTeachers() {
                     className="flex gap-4"
                   >
                     {filteredTeachers
-                      .slice(currentSlide * 2, (currentSlide * 2) + 2)
+                      .slice(currentSlide * itemsPerSlide, (currentSlide * itemsPerSlide) + itemsPerSlide)
                       .map((teacher, index) => (
                         <Link
                           to={`/teacher/${teacher.user_id}`}
@@ -355,7 +358,7 @@ export function FeaturedTeachers() {
               </div>
 
               {/* Carousel Navigation */}
-              {Math.ceil(filteredTeachers.length / 2) > 1 && (
+              {totalSlides > 1 && (
                 <>
                   {/* Navigation Buttons */}
                   <button
@@ -376,8 +379,8 @@ export function FeaturedTeachers() {
                   </button>
 
                   {/* Dots Indicator */}
-                  <div className="flex justify-center gap-2 mt-6">
-                    {Array.from({ length: Math.ceil(filteredTeachers.length / 2) }, (_, i) => (
+                  <div className="flex justify-center flex-wrap gap-2 mt-6 px-4">
+                    {Array.from({ length: totalSlides }, (_, i) => (
                       <button
                         key={i}
                         onClick={() => goToSlide(i)}
@@ -436,9 +439,14 @@ export function FeaturedTeachers() {
                       <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
                         {teacher.profile?.full_name || "Teacher"}
                       </h3>
-                      <div className="flex items-center gap-1 text-sm">
-                        <Star className="w-4 h-4 fill-gold text-gold" />
-                        <span className="font-medium">{teacher.rating || 0}</span>
+                      <div className="flex flex-col items-end gap-1">
+                        <div className="flex items-center gap-1 text-sm">
+                          <Star className="w-4 h-4 fill-gold text-gold" />
+                          <span className="font-medium">{typeof teacher.rating === 'number' ? teacher.rating.toFixed(1) : (teacher.rating || "0.0")}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          ({teacher.total_reviews || 0} reviews)
+                        </span>
                       </div>
                     </div>
 
@@ -452,7 +460,7 @@ export function FeaturedTeachers() {
                           {subj}
                         </span>
                       ))}
-                      {teacher.subjects?.length > 2 && (
+                      {teacher.subjects && teacher.subjects.length > 2 && (
                         <span className="subject-badge bg-muted text-muted-foreground text-xs">
                           +{teacher.subjects.length - 2}
                         </span>
