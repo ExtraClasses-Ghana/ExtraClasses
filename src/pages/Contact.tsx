@@ -5,7 +5,11 @@ import { motion } from "framer-motion";
 import { 
   Send, 
   MessageSquare,
-  Loader2
+  Loader2,
+  Mail,
+  Phone,
+  MapPin,
+  Clock
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,11 +25,6 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-
-const emailIcon = new URL('../../icons/Email.png', import.meta.url).href;
-const phoneIcon = new URL('../../icons/Phone icon.png', import.meta.url).href;
-const mapIcon = new URL('../../icons/Map icon.png', import.meta.url).href;
-const clockIcon = new URL('../../icons/Clock icon.png', import.meta.url).href;
 
 export default function Contact() {
   const [loading, setLoading] = useState(false);
@@ -72,28 +71,32 @@ export default function Contact() {
 
   const contactInfo = [
     {
-      icon: emailIcon,
+      icon: Mail,
       title: "Email Us",
       details: SUPPORT_EMAIL,
-      description: "We'll respond within 24 hours"
+      description: "We'll respond within 24 hours",
+      color: "text-blue-500"
     },
     {
-      icon: phoneIcon,
+      icon: Phone,
       title: "Call Us",
       details: PHONE_NUMBER,
-      description: "Mon-Fri, 8am-6pm GMT"
+      description: "Mon-Fri, 8am-6pm GMT",
+      color: "text-green-500"
     },
     {
-      icon: mapIcon,
+      icon: MapPin,
       title: "Visit Us",
       details: "Accra, Ghana",
-      description: "By appointment only"
+      description: "By appointment only",
+      color: "text-orange-500"
     },
     {
-      icon: clockIcon,
+      icon: Clock,
       title: "Business Hours",
       details: "8:00 AM - 6:00 PM",
-      description: "Monday to Friday"
+      description: "Monday to Friday",
+      color: "text-purple-500"
     }
   ];
 
@@ -208,8 +211,9 @@ export default function Contact() {
                               initial={{ scale: 1 }}
                               animate={{ scale: 1 }}
                               whileHover={{ scale: 1.1 }}
+                              className={info.color}
                             >
-                              <img src={info.icon} alt={info.title} className="w-7 h-7 object-contain" />
+                              <info.icon className="w-7 h-7" />
                             </motion.div>
                           </motion.div>
 
@@ -536,7 +540,7 @@ export default function Contact() {
                               className="flex items-center"
                               whileHover={{ x: 4 }}
                             >
-                              <img src={phoneIcon} alt="call" className="w-4 h-4 mr-2 object-contain" />
+                              <Phone className="w-4 h-4 mr-2" />
                               Call {PHONE_NUMBER}
                             </motion.div>
                           </Button>

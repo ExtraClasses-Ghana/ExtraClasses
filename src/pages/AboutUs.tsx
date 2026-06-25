@@ -5,43 +5,36 @@ import {
   Target,
   Lightbulb,
   Users,
-  GraduationCap
+  GraduationCap,
+  Award,
+  Heart,
+  MapPin,
+  Mail,
+  Phone
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-
-const mapIcon = new URL('../../icons/Map icon.png', import.meta.url).href;
-const emailIcon = new URL('../../icons/Email.png', import.meta.url).href;
-const phoneIcon = new URL('../../icons/Phone icon.png', import.meta.url).href;
-const graduationHat = new URL('../../icons/Graduation hat.png', import.meta.url).href;
-const communityIcon = new URL('../../icons/Community icon.png', import.meta.url).href;
-const medalIcon = new URL('../../icons/Medal icon.png', import.meta.url).href;
-const heartIcon = new URL('../../icons/Heart icon.png', import.meta.url).href;
 
 export default function AboutUs() {
   const values = [
     {
-      icon: graduationHat,
+      icon: GraduationCap,
       title: "Quality Education",
-      description: "We connect students with qualified, verified teachers who are passionate about teaching.",
-      isImage: true
+      description: "We connect students with qualified, verified teachers who are passionate about teaching."
     },
     {
-      icon: communityIcon,
+      icon: Users,
       title: "Community First",
-      description: "Building a supportive learning community across all regions of Ghana.",
-      isImage: true
+      description: "Building a supportive learning community across all regions of Ghana."
     },
     {
-      icon: medalIcon,
+      icon: Award,
       title: "Excellence",
-      description: "We strive for excellence in every tutoring session and student outcome.",
-      isImage: true
+      description: "We strive for excellence in every tutoring session and student outcome."
     },
     {
-      icon: heartIcon,
+      icon: Heart,
       title: "Accessibility",
-      description: "Making quality education accessible to every student, regardless of location.",
-      isImage: true
+      description: "Making quality education accessible to every student, regardless of location."
     }
   ];
 
@@ -174,8 +167,8 @@ export default function AboutUs() {
                 >
                   <Card className="h-full text-center hover:shadow-lg transition-shadow">
                     <CardContent className="pt-6">
-                      <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                        <img src={value.icon} alt={value.title} className="w-10 h-10 object-contain" />
+                      <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4 text-primary">
+                        <value.icon className="w-10 h-10" />
                       </div>
                       <h3 className="font-semibold text-foreground mb-2">{value.title}</h3>
                       <p className="text-sm text-muted-foreground">{value.description}</p>
@@ -207,22 +200,25 @@ export default function AboutUs() {
             <div className="grid sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
               {[
                 {
-                  icon: mapIcon,
+                  icon: MapPin,
                   title: "Address",
                   details: "Accra, Ghana",
-                  color: "from-blue-500/20 to-blue-600/20"
+                  color: "from-blue-500/20 to-blue-600/20",
+                  iconColor: "text-blue-600"
                 },
                 {
-                  icon: emailIcon,
+                  icon: Mail,
                   title: "Email",
                   details: "extraclassesghana@gmail.com",
-                  color: "from-green-500/20 to-green-600/20"
+                  color: "from-green-500/20 to-green-600/20",
+                  iconColor: "text-green-600"
                 },
                 {
-                  icon: phoneIcon,
+                  icon: Phone,
                   title: "Phone",
                   details: "0596352632",
-                  color: "from-purple-500/20 to-purple-600/20"
+                  color: "from-purple-500/20 to-purple-600/20",
+                  iconColor: "text-purple-600"
                 }
               ].map((item, index) => (
                 <motion.div
@@ -237,11 +233,11 @@ export default function AboutUs() {
                     <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
                     <CardContent className="pt-6 relative z-10">
                       <motion.div
-                        className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition-colors duration-300"
+                        className={`w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition-colors duration-300 ${item.iconColor}`}
                         whileHover={{ scale: 1.1, rotate: 5 }}
                         transition={{ type: "spring", stiffness: 300 }}
                       >
-                        <img src={item.icon} alt={item.title} className="w-7 h-7 object-contain" />
+                        <item.icon className="w-7 h-7" />
                       </motion.div>
                       <h3 className="font-semibold mb-2 text-foreground">{item.title}</h3>
                       <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors duration-300">{item.details}</p>
