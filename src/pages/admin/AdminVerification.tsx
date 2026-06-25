@@ -62,6 +62,7 @@ interface PendingTeacher {
   user_id: string;
   verification_status: string;
   created_at: string;
+  ghana_card_number: string | null;
   profile: {
     full_name: string;
     email: string;
@@ -132,7 +133,7 @@ export default function AdminVerification() {
   const fetchPendingVerifications = async (isBackground = false) => {
     if (!isBackground) setLoading(true);
     try {
-      let query = supabase.from("teacher_profiles").select("user_id, verification_status, created_at");
+      let query = supabase.from("teacher_profiles").select("user_id, verification_status, created_at, ghana_card_number");
       
       if (filterType === "pending") {
         query = query.in("verification_status", ["pending", "in_review"]);
@@ -474,6 +475,12 @@ export default function AdminVerification() {
     switch (type) {
       case "national_id":
         return "National ID";
+      case "ghana_card_front":
+        return "Ghana Card (Front)";
+      case "ghana_card_back":
+        return "Ghana Card (Back)";
+      case "selfie_image":
+        return "Selfie Camera Shot";
       case "degree":
         return "Degree Certificate";
       case "teaching_certificate":
@@ -609,6 +616,11 @@ export default function AdminVerification() {
                               <p className="text-muted-foreground">
                                 {teacher.profile?.email}
                               </p>
+                              {teacher.ghana_card_number && (
+                                <p className="text-sm font-semibold text-primary dark:text-sky-400 mt-1">
+                                  Ghana Card: <code className="px-1.5 py-0.5 rounded bg-primary/10 dark:bg-sky-500/10 font-mono">{teacher.ghana_card_number}</code>
+                                </p>
+                              )}
                               <div className="flex items-center gap-2 mt-2">
                                 <Clock className="w-4 h-4 text-muted-foreground opacity-70" />
                                 <span className="text-sm font-medium text-muted-foreground opacity-80">
@@ -764,6 +776,11 @@ export default function AdminVerification() {
                       <div>
                         <h3 className="font-bold text-lg">{selectedTeacher.profile?.full_name}</h3>
                         <p className="text-muted-foreground">{selectedTeacher.profile?.email}</p>
+                        {selectedTeacher.ghana_card_number && (
+                          <p className="text-sm font-semibold mt-1 text-primary dark:text-sky-400">
+                            Ghana Card: <code className="px-1.5 py-0.5 rounded bg-primary/10 dark:bg-sky-500/10 font-mono">{selectedTeacher.ghana_card_number}</code>
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -567,6 +567,7 @@ export type Database = {
           updated_at: string
           user_id: string
           verification_status: string | null
+          ghana_card_number: string | null
         }
         Insert: {
           achievements?: string[] | null
@@ -590,6 +591,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           verification_status?: string | null
+          ghana_card_number?: string | null
         }
         Update: {
           achievements?: string[] | null
@@ -613,6 +615,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           verification_status?: string | null
+          ghana_card_number?: string | null
         }
         Relationships: []
       }

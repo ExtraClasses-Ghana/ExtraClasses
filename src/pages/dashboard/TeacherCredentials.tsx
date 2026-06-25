@@ -3,14 +3,24 @@ import { TeacherDashboardLayout } from "@/components/dashboard/TeacherDashboardL
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { CredentialDeleteWarning } from "@/components/teacher/CredentialDeleteWarning";
 import { 
   FileText, Upload, CheckCircle, XCircle, Clock, 
-  RefreshCw, Loader2, Eye, Download, Trash2
+  RefreshCw, Loader2, Eye, Download, Trash2, Camera
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface VerificationDoc {
   id: string;
@@ -24,8 +34,9 @@ interface VerificationDoc {
 }
 
 const documentTypes = [
-  { value: "national_id", label: "National ID / Ghana Card" },
-  { value: "facial_verification", label: "Facial Verification (Selfie with ID)" },
+  { value: "ghana_card_front", label: "Ghana Card - Front Side" },
+  { value: "ghana_card_back", label: "Ghana Card - Back Side" },
+  { value: "selfie_image", label: "Selfie Photo" },
   { value: "degree", label: "Degree Certificate" },
   { value: "qualifications", label: "Additional Qualifications" },
   { value: "teaching_certificate", label: "Teaching Certificate" },
@@ -41,6 +52,14 @@ export default function TeacherCredentials() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [teacherStatus, setTeacherStatus] = useState<string | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  // Ghana Card & Camera states
+  const [ghanaCardNumber, setGhanaCardNumber] = useState("");
+  const [savingCardNumber, setSavingCardNumber] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     if (user) fetchDocuments();
@@ -61,12 +80,13 @@ export default function TeacherCredentials() {
       // Fetch teacher profile status
       const { data: profile } = await supabase
         .from("teacher_profiles")
-        .select("verification_status")
+        .select("verification_status, ghana_card_number")
         .eq("user_id", user.id)
         .maybeSingle();
         
       if (profile) {
         setTeacherStatus(profile.verification_status);
+        setGhanaCardNumber(profile.ghana_card_number || "");
       }
     } catch (error) {
       console.error("Error fetching documents:", error);
@@ -75,19 +95,98 @@ export default function TeacherCredentials() {
     }
   };
 
-  const handleFileUpload = async (docType: string, event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !user) return;
-
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
-      toast.error("File must be less than 5MB");
+  const handleSaveGhanaCard = async () => {
+    if (!user) return;
+    
+    // Validate GHA-XXXXXXXXX-X format
+    const regex = /^GHA-\d{9}-\d$/;
+    if (!regex.test(ghanaCardNumber)) {
+      toast.error("Invalid Ghana Card Number format. It must follow: GHA-XXXXXXXXX-X (e.g., GHA-123456789-0)");
       return;
     }
 
-    setUploading(docType);
+    setSavingCardNumber(true);
     try {
-      const fileExt = file.name.split(".").pop();
+      const { error } = await supabase
+        .from("teacher_profiles")
+        .update({ ghana_card_number: ghanaCardNumber })
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+      toast.success("Ghana Card Number saved successfully!");
+    } catch (error: any) {
+      console.error("Error saving card number:", error);
+      toast.error(error.message || "Failed to save Ghana Card Number");
+    } finally {
+      setSavingCardNumber(false);
+    }
+  };
+
+  const startCamera = async () => {
+    setCapturedImage(null);
+    setCameraOpen(true);
+    try {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: 640, height: 480 }
+      });
+      setCameraStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error("Error accessing camera:", err);
+      toast.error("Could not access camera. Please verify permissions or upload a selfie image file instead.");
+      setCameraOpen(false);
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    setCameraOpen(false);
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL("image/jpeg");
+      setCapturedImage(dataUrl);
+    }
+  };
+
+  const handleUploadCaptured = async () => {
+    if (!capturedImage || !user) return;
+    setUploading("selfie_image");
+    try {
+      const res = await fetch(capturedImage);
+      const blob = await res.blob();
+      const file = new File([blob], `selfie-${Date.now()}.jpg`, { type: "image/jpeg" });
+      
+      await uploadDirectFile("selfie_image", file);
+      stopCamera();
+    } catch (error: any) {
+      console.error("Selfie upload error:", error);
+      toast.error("Failed to upload captured selfie");
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const uploadDirectFile = async (docType: string, file: File) => {
+    if (!user) return;
+    try {
+      const fileExt = file.name.split(".").pop() || "jpg";
       const fileName = `${user.id}/${docType}-${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
@@ -155,6 +254,22 @@ export default function TeacherCredentials() {
     } catch (error: any) {
       console.error("Upload error:", error);
       toast.error(error.message || "Failed to upload document");
+    }
+  };
+
+  const handleFileUpload = async (docType: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast.error("File must be less than 5MB");
+      return;
+    }
+
+    setUploading(docType);
+    try {
+      await uploadDirectFile(docType, file);
     } finally {
       setUploading(null);
     }
@@ -277,6 +392,41 @@ export default function TeacherCredentials() {
           </p>
         </div>
 
+        {/* Ghana Card Number Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Ghana Card Registration</CardTitle>
+            <CardDescription>
+              Please enter your unique Ghana Card Number (Format: GHA-XXXXXXXXX-X)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col sm:flex-row items-end gap-4">
+              <div className="flex-1 w-full space-y-2">
+                <Label htmlFor="ghanaCardNumber" className="font-semibold">Ghana Card Number</Label>
+                <Input
+                  id="ghanaCardNumber"
+                  value={ghanaCardNumber}
+                  onChange={(e) => setGhanaCardNumber(e.target.value)}
+                  placeholder="GHA-123456789-0"
+                  className="font-mono text-base uppercase"
+                />
+              </div>
+              <Button
+                onClick={handleSaveGhanaCard}
+                disabled={savingCardNumber || !ghanaCardNumber}
+                className="w-full sm:w-auto h-10 px-6 bg-primary text-white"
+              >
+                {savingCardNumber ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Save Card Number
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Format check: Starts with GHA-, followed by 9 digits, a dash, and a trailing digit.
+            </p>
+          </CardContent>
+        </Card>
+
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -333,6 +483,17 @@ export default function TeacherCredentials() {
                             onClick={() => window.open(doc.file_url, "_blank")}
                           >
                             <Eye className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {docType.value === "selfie_image" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={startCamera}
+                            disabled={uploading === "selfie_image"}
+                          >
+                            <Camera className="w-4 h-4 mr-2" />
+                            Take Photo
                           </Button>
                         )}
                         <input
@@ -396,6 +557,83 @@ export default function TeacherCredentials() {
           documentType={selectedDocForDelete?.document_type || ""}
           isDeleting={isDeleting}
         />
+
+        {/* Camera capture modal */}
+        <Dialog open={cameraOpen} onOpenChange={(open) => { if (!open) stopCamera(); }}>
+          <DialogContent className="max-w-lg bg-card border-border shadow-2xl rounded-2xl overflow-hidden p-0">
+            <DialogHeader className="p-6 pb-4">
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <Camera className="w-5 h-5 text-primary" />
+                Capture Selfie
+              </DialogTitle>
+              <DialogDescription>
+                Take a selfie photo for identity verification. Access will be requested for your camera.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="px-6 pb-6 flex flex-col items-center gap-4">
+              <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden flex items-center justify-center border border-border">
+                {!capturedImage ? (
+                  <>
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      className="w-full h-full object-cover scale-x-[-1]"
+                    />
+                    {!cameraStream && (
+                      <Loader2 className="absolute w-8 h-8 text-white/50 animate-spin" />
+                    )}
+                  </>
+                ) : (
+                  <img
+                    src={capturedImage}
+                    alt="Captured selfie"
+                    className="w-full h-full object-cover scale-x-[-1]"
+                  />
+                )}
+              </div>
+
+              <div className="flex gap-3 w-full justify-end">
+                <Button
+                  variant="outline"
+                  onClick={stopCamera}
+                  disabled={uploading === "selfie_image"}
+                >
+                  Cancel
+                </Button>
+
+                {!capturedImage ? (
+                  <Button
+                    onClick={capturePhoto}
+                    disabled={!cameraStream}
+                    className="bg-primary text-white"
+                  >
+                    Capture
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => setCapturedImage(null)}
+                      disabled={uploading === "selfie_image"}
+                    >
+                      Retake
+                    </Button>
+                    <Button
+                      onClick={handleUploadCaptured}
+                      disabled={uploading === "selfie_image"}
+                      className="bg-green-600 hover:bg-green-700 text-white animate-fade-in"
+                    >
+                      {uploading === "selfie_image" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                      Use Photo & Upload
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </TeacherDashboardLayout>
   );
