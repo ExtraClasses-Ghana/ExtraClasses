@@ -18,8 +18,10 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { ghanaRegions, subjects } from "@/data/teachers";
+import { ghanaRegions } from "@/data/teachers";
 import { useEducationLevels } from '@/hooks/useEducationLevel';
+import { useAllSubjects } from "@/hooks/useSubjectsByEducationLevel";
+import { useMemo } from "react";
 
 export interface FilterState {
   subject: string;
@@ -50,6 +52,14 @@ export function SearchFilters({
   };
 
   const { levels: educationLevels, loading: loadingLevels } = useEducationLevels();
+  const { subjects: dbSubjects, loading: loadingSubjects } = useAllSubjects();
+
+  const filteredSubjectOptions = useMemo(() => {
+    if (!filters.educationLevel || filters.educationLevel === "All Levels") {
+      return dbSubjects;
+    }
+    return dbSubjects.filter(sub => sub.education_level === filters.educationLevel);
+  }, [dbSubjects, filters.educationLevel]);
 
   // Inline component so it can access `filters` and `updateFilter`
   const EducationLevelSelect = () => {
@@ -89,13 +99,14 @@ export function SearchFilters({
           value={filters.subject}
           onValueChange={(val) => updateFilter("subject", val)}
         >
-          <SelectTrigger className="w-full bg-white border-border">
-            <SelectValue placeholder="All Subjects" />
+          <SelectTrigger className="w-full bg-white border-border" disabled={loadingSubjects}>
+            <SelectValue placeholder={loadingSubjects ? "Loading..." : "All Subjects"} />
           </SelectTrigger>
           <SelectContent className="bg-white border-border z-50">
-            {subjects.map((subject) => (
-              <SelectItem key={subject} value={subject}>
-                {subject}
+            <SelectItem value="All Subjects">All Subjects</SelectItem>
+            {filteredSubjectOptions.map((subject) => (
+              <SelectItem key={subject.id} value={subject.name}>
+                {subject.name}
               </SelectItem>
             ))}
           </SelectContent>
