@@ -38,6 +38,14 @@ interface SessionItem {
   amount: number;
   teacher?: { full_name: string; email?: string };
   student?: { full_name: string; email?: string };
+  payment_status?: string;
+  meeting_link?: string | null;
+  meeting_platform?: string | null;
+  admin_checked?: boolean;
+  admin_joined_at?: string | null;
+  inspected_by_admin_id?: string | null;
+  inspected_by_admin_name?: string | null;
+  created_at?: string;
 }
 
 interface AdminSessionRow {
@@ -59,6 +67,12 @@ interface AdminSessionRow {
   teacher_email?: string;
   payment_status?: string;
   room_code?: string;
+  meeting_link?: string;
+  meeting_platform?: string;
+  admin_checked?: boolean;
+  admin_joined_at?: string;
+  inspected_by_admin_id?: string;
+  inspected_by_admin_name?: string;
 }
 
 export default function AdminSessions() {
@@ -107,8 +121,14 @@ export default function AdminSessions() {
           // attach extra fields so UI can use them
           payment_status: s.payment_status,
           room_code: s.room_code,
+          meeting_link: s.meeting_link,
+          meeting_platform: s.meeting_platform,
+          admin_checked: s.admin_checked,
+          admin_joined_at: s.admin_joined_at,
+          inspected_by_admin_id: s.inspected_by_admin_id,
+          inspected_by_admin_name: s.inspected_by_admin_name,
           created_at: s.created_at,
-        } as SessionItem & { payment_status?: string; room_code?: string; created_at?: string }));
+        } as SessionItem));
 
         setSessions(mapped);
       }
@@ -130,6 +150,29 @@ export default function AdminSessions() {
 
     return () => { void supabase.removeChannel(channel); };
   }, [fetchSessions]);
+
+  const handleAdminJoin = async (sessionId: string, meetingLink: string) => {
+    try {
+      const { error } = await (supabase as any).rpc('log_admin_session_join', { p_session_id: sessionId });
+      if (error) throw error;
+      
+      toast({
+        title: "Audit Intercept Logged",
+        description: "Admin session check-in has been registered successfully."
+      });
+      
+      window.open(meetingLink, '_blank');
+      fetchSessions();
+    } catch (err: any) {
+      console.error('Error logging audit check-in:', err);
+      toast({
+        title: "Audit Logging Failed",
+        description: err.message || "Failed to log administrative intercept, but opening call link...",
+        variant: "destructive"
+      });
+      window.open(meetingLink, '_blank');
+    }
+  };
 
   const handleDelete = async (id: string) => {
     if (!id) return;
@@ -183,7 +226,7 @@ export default function AdminSessions() {
       total_amount: `GH₵${(s.amount * 1.1).toFixed(2)}`,
       payment_status: (s as any).payment_status || 'pending',
       payment_method: 'Not specified',
-      room_code: (s as any).room_code || 'N/A',
+      room_code: (s as any).meeting_link || (s as any).room_code || 'N/A',
       created_at: format(new Date((s as any).created_at || new Date()), 'yyyy-MM-dd HH:mm:ss'),
       notes: '',
     }));
@@ -275,7 +318,13 @@ export default function AdminSessions() {
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return sessions.filter(s => {
-      if (statusFilter !== 'all' && s.status !== statusFilter) return false;
+      if (statusFilter !== 'all') {
+        if (statusFilter === 'accepted') {
+          if (s.status !== 'accepted' && s.status !== 'confirmed') return false;
+        } else {
+          if (s.status !== statusFilter) return false;
+        }
+      }
       if (dateFrom && new Date(s.session_date) < new Date(dateFrom)) return false;
       if (dateTo && new Date(s.session_date) > new Date(dateTo)) return false;
       if (!q) return true;
@@ -360,7 +409,7 @@ export default function AdminSessions() {
                 <SelectContent className="glassmorphism-dialog border-white/10 rounded-xl">
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="accepted">Accepted</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
@@ -435,17 +484,31 @@ export default function AdminSessions() {
                                 <span className="font-semibold text-foreground/80">Teacher:</span> 
                                 <span className="text-muted-foreground">{s.teacher?.full_name || s.teacher_id}</span>
                               </div>
+                              {s.session_type === 'online' && (
+                                <div className="flex items-center gap-1.5 text-sm bg-muted/40 px-2 py-1 rounded-md">
+                                  <span className="font-semibold text-foreground/80">Audit:</span> 
+                                  {s.admin_checked ? (
+                                    <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-xs py-0">
+                                      Inspected by {s.inspected_by_admin_name || 'Admin'}
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-muted-foreground text-xs py-0">
+                                      Not Inspected
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                           
                           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0 pl-[3.25rem] md:pl-0">
                             <Badge className={`px-3 py-1 text-sm font-semibold ${
-                              s.status === 'confirmed' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' :
+                              s.status === 'accepted' || s.status === 'confirmed' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' :
                               s.status === 'pending' ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20' :
                               s.status === 'completed' ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20' :
                               'bg-destructive/10 text-destructive border-destructive/20'
                             }`}>
-                              {s.status.charAt(0).toUpperCase() + s.status.slice(1)}
+                              {s.status === 'confirmed' ? 'Accepted' : s.status.charAt(0).toUpperCase() + s.status.slice(1)}
                             </Badge>
 
                             <Select value={s.status} onValueChange={(v) => handleChangeStatus(s.id, v)}>
@@ -454,13 +517,24 @@ export default function AdminSessions() {
                               </SelectTrigger>
                               <SelectContent className="glassmorphism-dialog rounded-xl">
                                 <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="confirmed">Confirmed</SelectItem>
+                                <SelectItem value="accepted">Accepted</SelectItem>
                                 <SelectItem value="completed">Completed</SelectItem>
                                 <SelectItem value="cancelled">Cancelled</SelectItem>
                               </SelectContent>
                             </Select>
 
                             <div className="flex items-center gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                              {s.session_type === 'online' && s.meeting_link && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleAdminJoin(s.id, s.meeting_link!)}
+                                  className="h-9 px-3 rounded-lg border-primary/30 hover:bg-primary/10 hover:text-primary flex items-center gap-1.5 text-xs font-semibold shrink-0"
+                                >
+                                  <Video className="w-3.5 h-3.5" />
+                                  {s.admin_checked ? "Re-Join" : "Join Call"}
+                                </Button>
+                              )}
                               <Button variant="ghost" size="icon" onClick={() => setSelectedSession(s)} className="h-9 w-9 rounded-lg bg-background/50 hover:bg-primary/10 hover:text-primary transition-colors">
                                 <FileText className="w-4 h-4" />
                               </Button>
@@ -532,9 +606,33 @@ export default function AdminSessions() {
                    </div>
                    <div>
                      <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Status</p>
-                     <p className="font-medium mt-1 capitalize">{selectedSession.status}</p>
+                     <p className="font-medium mt-1 capitalize">{selectedSession.status === 'confirmed' ? 'Accepted' : selectedSession.status}</p>
                    </div>
                 </div>
+
+                {selectedSession.session_type === 'online' && selectedSession.meeting_link && (
+                  <div className="border-t border-border/50 pt-4 space-y-2">
+                    <div>
+                      <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Meeting Details</p>
+                      <p className="text-sm font-semibold text-foreground/80 mt-1">Platform: <span className="font-bold text-foreground">{selectedSession.meeting_platform || 'External'}</span></p>
+                      <p className="text-sm text-primary break-all hover:underline mt-0.5">
+                        <a href={selectedSession.meeting_link} target="_blank" rel="noreferrer">{selectedSession.meeting_link}</a>
+                      </p>
+                    </div>
+                    <div className="pt-2 border-t border-border/20">
+                      <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Quality Control Audit</p>
+                      {selectedSession.admin_checked ? (
+                        <div className="mt-1 text-sm text-muted-foreground space-y-1">
+                          <p>Status: <span className="text-emerald-500 font-bold">Checked</span></p>
+                          <p>Inspected By: <span className="font-semibold text-foreground">{selectedSession.inspected_by_admin_name || 'Admin'}</span></p>
+                          <p>Joined At: <span className="font-semibold text-foreground">{selectedSession.admin_joined_at ? format(new Date(selectedSession.admin_joined_at), 'PPPP p') : ''}</span></p>
+                        </div>
+                      ) : (
+                        <p className="mt-1 text-sm text-muted-foreground italic">No administrative interception logged for this session.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex gap-2 justify-end mt-4">
                   <Button onClick={() => setSelectedSession(null)} className="rounded-xl px-6">Close</Button>

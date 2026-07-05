@@ -126,7 +126,7 @@ export function TeacherOverview() {
         .select("*")
         .eq("teacher_id", user.id)
         .gte("session_date", today)
-        .in("status", ["pending", "confirmed"])
+        .in("status", ["pending", "accepted", "confirmed"])
         .order("session_date", { ascending: true })
         .limit(5);
 
@@ -169,7 +169,7 @@ export function TeacherOverview() {
         .select("*", { count: "exact", head: true })
         .eq("teacher_id", user.id)
         .gte("session_date", today)
-        .eq("status", "confirmed");
+        .in("status", ["accepted", "confirmed"]);
 
       const { count: pendingCount } = await supabase
         .from("sessions")
@@ -194,6 +194,7 @@ export function TeacherOverview() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "accepted":
       case "confirmed":
         return "bg-accent text-accent-foreground";
       case "pending":

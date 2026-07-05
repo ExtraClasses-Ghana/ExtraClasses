@@ -32,8 +32,11 @@ interface Session {
   duration_minutes: number;
   session_type: string;
   status: string;
+  student_id: string;
   teacher_id: string;
   amount: number;
+  meeting_link?: string | null;
+  meeting_platform?: string | null;
 }
 
 interface TeacherInfo {
@@ -91,7 +94,11 @@ export function BookingHistory() {
         .order("session_date", { ascending: false });
 
       if (statusFilter !== "all") {
-        query = query.eq("status", statusFilter);
+        if (statusFilter === "accepted") {
+          query = query.in("status", ["accepted", "confirmed"]);
+        } else {
+          query = query.eq("status", statusFilter);
+        }
       }
 
       const { data: sessionsData } = await query.limit(50);
@@ -118,6 +125,7 @@ export function BookingHistory() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "accepted":
       case "confirmed":
         return "bg-accent text-accent-foreground";
       case "pending":
@@ -220,7 +228,7 @@ export function BookingHistory() {
             <SelectContent>
               <SelectItem value="all">All Sessions</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="confirmed">Confirmed</SelectItem>
+              <SelectItem value="accepted">Accepted</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
@@ -298,20 +306,20 @@ export function BookingHistory() {
                         Delete
                       </Button>
                     </div>
-                    {session.status === "confirmed" && session.session_type === "online" && (
+                    {(session.status === "accepted" || session.status === "confirmed") && session.session_type === "online" && (
                       <Button
                         size="sm"
-                        className="mt-2"
-                        onClick={async () => {
-                          const { data } = await (supabase.from("video_sessions") as any)
-                            .select("room_code")
-                            .eq("session_id", session.id)
-                            .maybeSingle();
-                          if (data?.room_code) navigate(`/video/${data.room_code}`);
+                        className="mt-2 bg-accent text-accent-foreground hover:bg-accent/90"
+                        disabled={!session.meeting_link}
+                        onClick={() => {
+                          if (session.meeting_link) {
+                            window.open(session.meeting_link, '_blank');
+                          }
                         }}
+                        title={session.meeting_link ? "Join Call" : "Waiting for meeting link..."}
                       >
                         <Video className="w-4 h-4 mr-1" />
-                        Join
+                        {session.meeting_link ? "Join Meeting" : "Waiting for Link"}
                       </Button>
                     )}
                   </div>

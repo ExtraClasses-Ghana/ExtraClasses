@@ -429,7 +429,7 @@ export function BookingModal({
           start_time: startTime,
           duration_minutes: parseInt(duration),
           session_type: lessonType,
-          status: "confirmed",
+          status: "pending",
           amount: amountGhs,
           notes: notes || null,
           platform_fee: platformFee,

@@ -10,7 +10,6 @@ import AboutUs from "./pages/AboutUs";
 import Contact from "./pages/Contact";
 import Subjects from "./pages/Subjects";
 import CourseMaterials from "./pages/CourseMaterials";
-import VideoCall from "./pages/VideoCall";
 
 // Student Dashboard Pages
 import StudentDashboard from "./pages/dashboard/StudentDashboard";
@@ -78,7 +77,6 @@ const App = () => (
             <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
             <Route path="/subjects" element={<PageTransition><Subjects /></PageTransition>} />
             <Route path="/course-materials" element={<PageTransition><CourseMaterials /></PageTransition>} />
-            <Route path="/video/:roomCode" element={<VideoCall />} />
 
             {/* Admin Login (Public) */}
             <Route path="/admin/login" element={<AdminLogin />} />

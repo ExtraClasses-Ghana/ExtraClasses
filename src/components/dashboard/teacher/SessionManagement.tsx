@@ -23,6 +23,16 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { generateTeacherSessionsPDF } from "@/lib/teacherSessionsPDF";
 import { generatePDFFromTemplate } from "@/lib/pdfExport";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface Session {
   id: string;
@@ -35,6 +45,8 @@ interface Session {
   student_id: string;
   amount: number;
   notes: string | null;
+  meeting_link?: string | null;
+  meeting_platform?: string | null;
 }
 
 interface StudentInfo {
@@ -51,6 +63,11 @@ export function SessionManagement() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("pending");
   const [isExporting, setIsExporting] = useState(false);
+  const [isAcceptDialogOpen, setIsAcceptDialogOpen] = useState(false);
+  const [selectedAcceptSession, setSelectedAcceptSession] = useState<Session | null>(null);
+  const [meetingLink, setMeetingLink] = useState("");
+  const [meetingPlatform, setMeetingPlatform] = useState("Google Meet");
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -96,7 +113,7 @@ export function SessionManagement() {
         query = query.eq("status", "pending");
       } else if (activeTab === "upcoming") {
         const today = new Date().toISOString().split('T')[0];
-        query = query.eq("status", "confirmed").gte("session_date", today);
+        query = query.in("status", ["accepted", "confirmed"]).gte("session_date", today);
       } else if (activeTab === "completed") {
         query = query.eq("status", "completed");
       }
@@ -132,19 +149,9 @@ export function SessionManagement() {
 
       if (error) throw error;
 
-      // Auto-create video session when confirming an online session
-      if (newStatus === "confirmed") {
-        const session = sessions.find((s) => s.id === sessionId);
-        if (session?.session_type === "online") {
-          await (supabase.from("video_sessions") as any).insert({
-            session_id: sessionId,
-          });
-        }
-      }
-
       toast({
-        title: newStatus === "confirmed" ? "Session Confirmed" : "Session Declined",
-        description: `The session has been ${newStatus}.`
+        title: newStatus === "accepted" ? "Session Accepted" : "Session Declined",
+        description: `The session status has been updated to ${newStatus}.`
       });
 
       fetchSessions();
@@ -157,21 +164,57 @@ export function SessionManagement() {
     }
   };
 
-  const joinVideoCall = async (sessionId: string) => {
-    const { data } = await (supabase.from("video_sessions") as any)
-      .select("room_code")
-      .eq("session_id", sessionId)
-      .maybeSingle();
+  const handleAcceptSession = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedAcceptSession) return;
+    
+    // For online sessions, ensure meeting link is provided
+    if (selectedAcceptSession.session_type === "online" && !meetingLink.trim()) {
+      toast({
+        title: "Meeting Link Required",
+        description: "Please provide a meeting link for this online session.",
+        variant: "destructive"
+      });
+      return;
+    }
 
-    if (data?.room_code) {
-      navigate(`/video/${data.room_code}`);
-    } else {
-      toast({ title: "No video session found", variant: "destructive" });
+    try {
+      setAcceptingId(selectedAcceptSession.id);
+      const { error } = await supabase
+        .from("sessions")
+        .update({
+          status: "accepted",
+          meeting_link: selectedAcceptSession.session_type === "online" ? meetingLink.trim() : null,
+          meeting_platform: selectedAcceptSession.session_type === "online" ? meetingPlatform : null,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", selectedAcceptSession.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Session Accepted",
+        description: "The session has been accepted successfully."
+      });
+
+      setIsAcceptDialogOpen(false);
+      setMeetingLink("");
+      setSelectedAcceptSession(null);
+      fetchSessions();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to accept session",
+        variant: "destructive"
+      });
+    } finally {
+      setAcceptingId(null);
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "accepted":
       case "confirmed":
         return "bg-accent text-accent-foreground";
       case "pending":
@@ -340,27 +383,38 @@ export function SessionManagement() {
                                 variant="outline"
                                 className="text-destructive hover:text-destructive"
                                 onClick={() => updateSessionStatus(session.id, "cancelled")}
+                                title="Decline Session"
                               >
                                 <X className="w-4 h-4" />
                               </Button>
                               <Button
                                 size="sm"
-                                onClick={() => updateSessionStatus(session.id, "confirmed")}
+                                onClick={() => {
+                                  setSelectedAcceptSession(session);
+                                  setIsAcceptDialogOpen(true);
+                                }}
                               >
                                 <Check className="w-4 h-4 mr-1" />
                                 Accept
                               </Button>
                             </div>
                           )}
-                          {session.status === "confirmed" && session.session_type === "online" && (
-                            <Button
-                              size="sm"
-                              className="mt-2"
-                              onClick={() => joinVideoCall(session.id)}
-                            >
-                              <Video className="w-4 h-4 mr-1" />
-                              Join Video
-                            </Button>
+                          {(session.status === "accepted" || session.status === "confirmed") && (
+                            <div className="flex flex-col gap-1 items-end mt-2">
+                              {session.session_type === "online" && session.meeting_link && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => window.open(session.meeting_link!, '_blank')}
+                                  className="bg-accent text-accent-foreground hover:bg-accent/90"
+                                >
+                                  <Video className="w-4 h-4 mr-1" />
+                                  Start Meeting
+                                </Button>
+                              )}
+                              {session.session_type === "online" && !session.meeting_link && (
+                                <span className="text-xs text-muted-foreground italic">No meeting link provided</span>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -372,6 +426,69 @@ export function SessionManagement() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Accept Session Dialog */}
+      <Dialog open={isAcceptDialogOpen} onOpenChange={setIsAcceptDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <form onSubmit={handleAcceptSession}>
+            <DialogHeader>
+              <DialogTitle>Accept Session Booking</DialogTitle>
+              <DialogDescription>
+                Confirm your acceptance of the booking. For online sessions, you must generate and paste an external meeting link.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              {selectedAcceptSession?.session_type === "online" && (
+                <>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="platform" className="text-right">
+                      Platform
+                    </Label>
+                    <Select value={meetingPlatform} onValueChange={setMeetingPlatform}>
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Select platform" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Google Meet">Google Meet</SelectItem>
+                        <SelectItem value="Zoom">Zoom</SelectItem>
+                        <SelectItem value="Microsoft Teams">Microsoft Teams</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="link" className="text-right">
+                      Meeting Link
+                    </Label>
+                    <Input
+                      id="link"
+                      type="url"
+                      placeholder="https://meet.google.com/..."
+                      value={meetingLink}
+                      onChange={(e) => setMeetingLink(e.target.value)}
+                      className="col-span-3"
+                      required
+                    />
+                  </div>
+                </>
+              )}
+              {selectedAcceptSession?.session_type !== "online" && (
+                <p className="text-sm text-muted-foreground py-2">
+                  This is an in-person session. Accepting will confirm the time and date details.
+                </p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsAcceptDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={acceptingId !== null}>
+                {acceptingId ? "Accepting..." : "Confirm & Accept"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -63,7 +63,7 @@ export function StudentOverview() {
         .select("*")
         .eq("student_id", user?.id as string)
         .gte("session_date", today)
-        .in("status", ["pending", "confirmed"])
+        .in("status", ["pending", "accepted", "confirmed"])
         .order("session_date", { ascending: true })
         .limit(5);
 
@@ -93,7 +93,7 @@ export function StudentOverview() {
         .select("*", { count: "exact", head: true })
         .eq("student_id", user?.id as string)
         .gte("session_date", today)
-        .in("status", ["pending", "confirmed"]);
+        .in("status", ["pending", "accepted", "confirmed"]);
 
       const { data: payments } = await supabase
         .from("payments")
@@ -123,6 +123,7 @@ export function StudentOverview() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "accepted":
       case "confirmed":
         return "bg-accent text-accent-foreground";
       case "pending":
