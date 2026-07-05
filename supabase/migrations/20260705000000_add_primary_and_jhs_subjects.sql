@@ -52,7 +52,26 @@ UPDATE public.profiles
 SET education_level = 'College of Health Sciences'
 WHERE education_level = 'College Of Healths';
 
--- 4. Insert/Upsert the new subjects with correct education_level names
+-- 4. Deactivate legacy generic subjects that are replaced by level-specific ones
+UPDATE public.subjects
+SET is_active = false
+WHERE name IN (
+  'Mathematics',
+  'Sciences',
+  'English Language',
+  'Social Studies',
+  'Visual Arts',
+  'Music',
+  'ICT & Computing',
+  'French Language',
+  'Additional Mathematics',
+  'Agricultural Science',
+  'Ghanaian Language',
+  'Literature-in-English',
+  'Religious and Moral Education'
+);
+
+-- 5. Insert/Upsert the new subjects with correct education_level names
 INSERT INTO public.subjects (name, description, icon, topics, education_level, is_active)
 VALUES
   -- Primary School (Basic 1 to 6)
