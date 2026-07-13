@@ -186,13 +186,24 @@ export default function AdminTWRPage() {
     }
   };
 
-  const handleStatusChange = async (newStatus: string) => {
+  const handleStatusChange = (newStatus: string) => {
     if (selectedWithdrawal && newStatus !== selectedWithdrawal.status) {
-      // If we are strictly following flow or bypassing
-      const result = await updateWithdrawalStatus(selectedWithdrawal.withdrawal_id, newStatus);
-      if (result.success) {
-        setSelectedWithdrawal((prev) => prev ? { ...prev, status: newStatus as any } : null);
-        refetch();
+      if (newStatus === 'approved') {
+        setActionDialog({ type: 'approve' });
+      } else if (newStatus === 'rejected') {
+        setActionDialog({ type: 'reject' });
+      } else if (newStatus === 'processing') {
+        setActionDialog({ type: 'process' });
+      } else if (newStatus === 'completed') {
+        setActionDialog({ type: 'complete' });
+      } else {
+        // Fallback direct update
+        updateWithdrawalStatus(selectedWithdrawal.withdrawal_id, newStatus).then((result) => {
+          if (result.success) {
+            setSelectedWithdrawal((prev) => prev ? { ...prev, status: newStatus as any } : null);
+            refetch();
+          }
+        });
       }
     }
   };

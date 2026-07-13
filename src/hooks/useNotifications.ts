@@ -10,7 +10,7 @@ interface NotificationCounts {
 
 export interface AppNotification {
   id: string;
-  type: 'message' | 'session' | 'payment' | 'favorite';
+  type: 'message' | 'session' | 'payment' | 'favorite' | 'withdrawal';
   title: string;
   message: string;
   read: boolean;
@@ -47,6 +47,13 @@ export function useNotifications(userId: string | undefined) {
           .gte("scheduled_date", new Date().toISOString())
           .neq("status", "completed");
 
+        // Fetch unread withdrawal notifications
+        const { data: withdrawalNotifs } = await supabase
+          .from("withdrawal_notifications" as any)
+          .select("id, title, message, is_read, created_at")
+          .eq("teacher_id", userId)
+          .eq("is_read", false);
+
         setNotifications({
           unreadMessages: messageCount || 0,
           upcomingSessions: sessionCount || 0,
@@ -74,6 +81,18 @@ export function useNotifications(userId: string | undefined) {
             message: `You have ${sessionCount} upcoming session(s)`,
             read: false,
             created_at: new Date().toISOString()
+          });
+        }
+        if (withdrawalNotifs && withdrawalNotifs.length > 0) {
+          withdrawalNotifs.forEach((n: any) => {
+            newItems.push({
+              id: n.id,
+              type: 'withdrawal',
+              title: n.title,
+              message: n.message,
+              read: n.is_read,
+              created_at: n.created_at
+            });
           });
         }
         setItems(newItems);
@@ -117,13 +136,31 @@ export function useNotifications(userId: string | undefined) {
       )
       .subscribe();
 
+    // Subscribe to real-time withdrawal notification changes
+    const withdrawalNotifChannel = supabase
+      .channel(`withdrawal-notifications-${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "withdrawal_notifications",
+          filter: `teacher_id=eq.${userId}`,
+        },
+        () => {
+          fetchNotifications();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(messageChannel);
       supabase.removeChannel(sessionChannel);
+      supabase.removeChannel(withdrawalNotifChannel);
     };
   }, [userId]);
 
-  const totalUnread = notifications.unreadMessages + notifications.upcomingSessions;
+  const totalUnread = notifications.unreadMessages + notifications.upcomingSessions + items.filter(item => item.type === 'withdrawal').length;
 
   return { ...notifications, totalUnread, items };
 }

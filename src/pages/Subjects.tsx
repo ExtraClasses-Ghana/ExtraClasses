@@ -225,7 +225,12 @@ export default function Subjects() {
       
       <main className="pt-20">
         {/* Hero Section */}
-        <section className="relative py-20 bg-gradient-to-br from-primary via-primary/90 to-accent/80 overflow-hidden">
+        <section className="relative py-20 overflow-hidden">
+          <div 
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url('https://ypuyaxgwkmthhthffrbi.supabase.co/storage/v1/object/public/carousels/1783351422298-ab8ecp.jpg')` }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/40 via-primary/25 to-primary/10 backdrop-blur-[0.5px]" />
           <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
           <div className="container mx-auto px-4 relative z-10">
             <motion.div

@@ -243,7 +243,7 @@ export default function AdminTeachers() {
         .from("teacher_withdrawals" as any)
         .select("amount")
         .eq("teacher_id", teacherId)
-        .in("status", ["paid", "processing", "withdrawing", "pending"]);
+        .in("status", ["completed", "paid", "processing", "approved", "pending"]);
 
       const totalWithdrawn = (withdrawals || []).reduce((sum, w: any) => sum + Number(w.amount), 0);
       

@@ -22,14 +22,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, Smartphone, History, CheckCircle, Clock, Loader2, Send, ArrowUpRight, TrendingUp } from "lucide-react";
+import { Wallet, Smartphone, History, CheckCircle, Clock, Loader2, Send, ArrowUpRight, TrendingUp, XCircle, AlertCircle } from "lucide-react";
 
 // Remote logos provided by product team
 const mtnLogoUrl = "https://momodeveloper.mtn.com/content/momo_mtna.png";
 const telecelLogoUrl = "https://www.telecel.com.gh/img/Telecel-Icon-Red.png";
 const airtelTigoLogoUrl = "https://download.logo.wine/logo/Airtel_Uganda/Airtel_Uganda-Logo.wine.png";
 
-type WithdrawalStatus = "pending" | "withdrawing" | "processing" | "paid";
+type WithdrawalStatus = "pending" | "approved" | "processing" | "completed" | "rejected" | "failed" | "withdrawing" | "paid";
 
 const NETWORKS = [
   { id: "mtn", label: "MTN Mobile Money", logo: mtnLogoUrl, color: "from-yellow-400 to-yellow-500" },
@@ -52,20 +52,40 @@ function StatusBadge({ status }: { status: WithdrawalStatus }) {
       className: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
       icon: <Clock className="h-3 w-3" />,
     },
-    withdrawing: {
-      label: "In progress",
+    approved: {
+      label: "Approved",
       className: "bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30",
-      icon: <Loader2 className="h-3 w-3 animate-spin" />,
+      icon: <Clock className="h-3 w-3" />,
+    },
+    withdrawing: {
+      label: "Approved",
+      className: "bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30",
+      icon: <Clock className="h-3 w-3" />,
     },
     processing: {
       label: "Processing",
-      className: "bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30",
+      className: "bg-purple-500/15 text-purple-700 dark:text-purple-400 border-purple-500/30",
       icon: <Loader2 className="h-3 w-3 animate-spin" />,
+    },
+    completed: {
+      label: "Completed",
+      className: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
+      icon: <CheckCircle className="h-3 w-3" />,
     },
     paid: {
       label: "Paid",
       className: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
       icon: <CheckCircle className="h-3 w-3" />,
+    },
+    rejected: {
+      label: "Rejected",
+      className: "bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30",
+      icon: <XCircle className="h-3 w-3" />,
+    },
+    failed: {
+      label: "Failed",
+      className: "bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30",
+      icon: <AlertCircle className="h-3 w-3" />,
     },
   };
   const { label, className, icon } = config[status] ?? config.pending;
@@ -129,7 +149,7 @@ export default function TeacherWithdrawals() {
         .from("teacher_withdrawals" as any)
         .select("amount, status")
         .eq("teacher_id", profile.user_id)
-        .in("status", ["paid", "processing", "withdrawing", "pending"]);
+        .in("status", ["completed", "paid", "processing", "approved", "pending"]);
 
       const totalWithdrawn = (withdrawals || []).reduce((sum, w: any) => sum + Number(w.amount), 0);
       

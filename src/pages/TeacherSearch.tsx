@@ -289,8 +289,14 @@ export default function TeacherSearch() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary via-primary/95 to-accent/20 pt-24 pb-12">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative pt-24 pb-12 overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url('https://ypuyaxgwkmthhthffrbi.supabase.co/storage/v1/object/public/carousels/1783351422298-ab8ecp.jpg')` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/40 via-primary/25 to-primary/10 backdrop-blur-[0.5px]" />
+        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}

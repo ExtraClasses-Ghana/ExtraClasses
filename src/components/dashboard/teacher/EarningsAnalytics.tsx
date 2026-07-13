@@ -122,9 +122,18 @@ export function EarningsAnalytics() {
         .eq("teacher_id", user.id)
         .order("created_at", { ascending: false });
         
-      const adjustments = (adjustmentsRaw || []) as any[];
+       const adjustments = (adjustmentsRaw || []) as any[];
+ 
+       // Get pending and processing withdrawals (total pending payout)
+       const { data: withdrawalsRaw } = await supabase
+         .from("teacher_withdrawals" as any)
+         .select("amount")
+         .eq("teacher_id", user.id)
+         .in("status", ["pending", "processing", "approved"]);
+         
+       const pendingPayouts = (withdrawalsRaw || []).reduce((sum, w: any) => sum + Number(w.amount), 0);
 
-      if (completedSessions) {
+       if (completedSessions) {
         const earningsData = completedSessions.map(session => ({
           id: session.id,
           amount: Number(session.amount),
@@ -186,7 +195,7 @@ export function EarningsAnalytics() {
           totalEarnings: sessionEarningsTotal + totalAdjustments,
           thisMonthEarnings,
           lastMonthEarnings,
-          pendingPayouts: 0
+          pendingPayouts
         });
       }
     } catch (error) {

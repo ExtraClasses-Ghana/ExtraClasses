@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Bell, MessageSquare, Calendar, ShieldAlert, CreditCard, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '@/hooks/useNotifications';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Popover,
   PopoverContent,
@@ -20,6 +21,16 @@ export function GlobalNotificationBell({ role }: { role: string }) {
 
   const handleNotificationClick = async (notification: any) => {
     setIsOpen(false);
+    
+    // Mark as read if it is a withdrawal notification
+    if (notification.type === 'withdrawal') {
+      try {
+        // @ts-ignore
+        await supabase.rpc('mark_notification_read', { notification_id: notification.id });
+      } catch (err) {
+        console.error("Error marking notification as read:", err);
+      }
+    }
     
     // Default routing based on role and type
     if (role === 'admin') {
